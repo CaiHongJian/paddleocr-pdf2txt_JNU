@@ -1,5 +1,6 @@
 import json
 import os
+from tqdm import tqdm  # 导入 tqdm 库
 
 def process_ocr_json(json_file_path, output_dir="output", indent_threshold=20):
     """
@@ -36,25 +37,27 @@ def process_ocr_json(json_file_path, output_dir="output", indent_threshold=20):
         result_text = ""
         total_lines = len(texts)
 
-        print(f"正在处理 {total_lines} 行数据...")
+        # 使用 tqdm 包装 iterable，设置描述和颜色
+        # colour='green' 可以让进度条变绿，ncols 设置宽度
+        with tqdm(total=total_lines, desc="正在处理", unit="行", colour="#ffffff", ncols=100) as pbar:
+            for i in range(total_lines):
+                current_text = texts[i].strip()
+                current_left = boxes[i][0]
 
-        for i in range(total_lines):
-            current_text = texts[i].strip() # 获取当前行文字并去除首尾空格
-            current_left = boxes[i][0]      # 获取当前行的起始 X 坐标 (left)
+                # --- 关键逻辑判断 ---
+                if current_left >= indent_threshold:
+                    # 情况1：起始坐标 >= 20，判定为“新段落开头”
+                    result_text += f"\n{current_text}"
+                else:
+                    # 情况2：起始坐标 < 20，判定为“上一段落的续行”
+                    result_text += current_text
 
-            # --- 关键逻辑判断 ---
-            if current_left >= indent_threshold:
-                # 情况1：起始坐标 >= 20，判定为“新段落开头”
-                # 操作：换行符 + 当前文字
-                result_text += f"\n{current_text}"
-            else:
-                # 情况2：起始坐标 < 20，判定为“上一段落的续行”
-                # 操作：直接拼接当前文字（不换行）
-                result_text += current_text
-
-            # --- 进度条 ---
-            progress = (i + 1) / total_lines * 100
-            print(f"\r处理进度: [{int(progress)}%] {'#' * int(progress/10)}{'.' * (10-int(progress/10))} ", end="")
+                # --- 更新进度条 ---
+                # 更新计数
+                pbar.update(1)
+                # 可选：在进度条后缀显示当前处理的文字预览（截取前10个字符）
+                preview = current_text[:10].replace('\n', '')
+                pbar.set_postfix_str(f"当前: {preview}...")
 
         # 去除最开头可能产生的多余空行
         result_text = result_text.lstrip('\n')
@@ -63,16 +66,14 @@ def process_ocr_json(json_file_path, output_dir="output", indent_threshold=20):
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(result_text)
 
-        print(f"\n\n✅ 处理完成！文件已保存至: {output_path}")
+        print(f"\n✅ 处理完成！文件已保存至: {output_path}")
 
     except Exception as e:
         print(f"处理文件时发生错误: {e}")
 
 def main():
     # --- 配置区 ---
-    # 输入的 JSON 文件路径
     input_json = "output/test1_res.json" 
-    # 输出文件夹
     output_folder = "output"
 
     # 执行处理
