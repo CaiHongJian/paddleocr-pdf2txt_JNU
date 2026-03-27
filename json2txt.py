@@ -1,15 +1,10 @@
 import json
 import os
-from tqdm import tqdm  # 导入 tqdm 库
+from tqdm import tqdm
 
 def process_ocr_json(json_file_path, output_dir="output", indent_threshold=20):
     """
     根据水平起始坐标判断段落，处理 JSON 并生成 TXT。
-    
-    参数:
-        json_file_path: 输入 JSON 文件路径
-        output_dir: 输出文件夹路径
-        indent_threshold: 判断新段落的起始 X 坐标阈值 (默认 20)
     """
     try:
         # 1. 读取文件
@@ -29,16 +24,18 @@ def process_ocr_json(json_file_path, output_dir="output", indent_threshold=20):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        # 4. 提取文件名（去掉 .json 后缀）
+        # 4. 提取文件名
         base_name = os.path.splitext(os.path.basename(json_file_path))[0]
         output_path = os.path.join(output_dir, f"{base_name}.txt")
 
-        # 5. 主逻辑：遍历每一行数据
+        # 5. 主逻辑
         result_text = ""
         total_lines = len(texts)
 
-        # 使用 tqdm 包装 iterable，设置描述和颜色
-        # colour='green' 可以让进度条变绿，ncols 设置宽度
+        # --- 配置缩进样式 ---
+        # 这里使用 4 个空格，你也可以改成 '\t' 使用制表符
+        indent_style = "    " 
+
         with tqdm(total=total_lines, desc="正在处理", unit="行", colour="#ffffff", ncols=100) as pbar:
             for i in range(total_lines):
                 current_text = texts[i].strip()
@@ -47,20 +44,20 @@ def process_ocr_json(json_file_path, output_dir="output", indent_threshold=20):
                 # --- 关键逻辑判断 ---
                 if current_left >= indent_threshold:
                     # 情况1：起始坐标 >= 20，判定为“新段落开头”
-                    result_text += f"\n{current_text}"
+                    # 修改点：换行符 + 缩进样式 + 当前文字
+                    result_text += f"\n{indent_style}{current_text}"
                 else:
                     # 情况2：起始坐标 < 20，判定为“上一段落的续行”
+                    # 保持原样，直接拼接
                     result_text += current_text
 
                 # --- 更新进度条 ---
-                # 更新计数
                 pbar.update(1)
-                # 可选：在进度条后缀显示当前处理的文字预览（截取前10个字符）
                 preview = current_text[:10].replace('\n', '')
                 pbar.set_postfix_str(f"当前: {preview}...")
 
-        # 去除最开头可能产生的多余空行
-        result_text = result_text.lstrip('\n')
+        # 去除最开头可能产生的多余空行和空白字符
+        result_text = result_text.lstrip('\n').lstrip()
 
         # 6. 保存文件
         with open(output_path, 'w', encoding='utf-8') as f:
@@ -76,7 +73,6 @@ def main():
     input_json = "output/test1_res.json" 
     output_folder = "output"
 
-    # 执行处理
     process_ocr_json(input_json, output_folder)
 
 if __name__ == "__main__":
