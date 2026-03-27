@@ -33,8 +33,9 @@ def process_ocr_json(json_file_path, output_dir="output", indent_threshold=20):
         total_lines = len(texts)
 
         # --- 配置缩进样式 ---
-        # 这里使用 4 个空格，你也可以改成 '\t' 使用制表符
-        indent_style = "    " 
+        # 这里使用 4 个空格，你也可以改成 c使用制表符
+        # indent_style = "    " 
+        indent_style = "\t"  # 使用制表符
 
         with tqdm(total=total_lines, desc="正在处理", unit="行", colour="#ffffff", ncols=100) as pbar:
             for i in range(total_lines):
