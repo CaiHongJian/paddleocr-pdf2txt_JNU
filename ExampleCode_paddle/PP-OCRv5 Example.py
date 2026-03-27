@@ -6,6 +6,8 @@ ocr = PaddleOCR(
     use_textline_orientation=False)
 
 # Run OCR inference on a sample image 
+# result = ocr.predict(
+#     input="https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/general_ocr_002.png")
 result = ocr.predict(r"BookImages\test1.png")
 
 # Visualize the results and save the JSON results
