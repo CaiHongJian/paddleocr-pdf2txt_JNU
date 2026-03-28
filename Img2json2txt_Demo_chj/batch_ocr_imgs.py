@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-批量 OCR 处理脚本
-功能：读取 BookImages 文件夹图片 -> 识别 -> 将 JSON 结果统一保存到 ocr_out_json 文件夹
+批量 OCR 处理图片脚本（demo）
+功能：读取 BookImages 文件夹图片 -> 识别 -> 将 JSON 结果统一保存到 ocr_out_jsons 文件夹
+作者：蔡鸿键
 """
 
 # 1. 导入必要的库

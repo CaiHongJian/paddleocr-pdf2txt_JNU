@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-批量 JSON 转 TXT 脚本
+批量 JSON 转 TXT 脚本（demo）
 功能：读取 ocr_out_jsons 文件夹内的所有 JSON 文件 -> 提取文字并按段落处理 -> 生成同名 TXT 文件保存到 ocr_out_texts 文件夹
 作者：蔡鸿键
 """
