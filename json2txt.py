@@ -71,8 +71,8 @@ def process_ocr_json(json_file_path, output_dir="output", indent_threshold=20):
 
 def main():
     # --- 配置区 ---
-    input_json = "output/test1_res.json" 
-    output_folder = "output"
+    input_json = "ocr_out_jsons/test2.json" 
+    output_folder = "ocr_out_texts"
 
     process_ocr_json(input_json, output_folder)
 
