@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-模块名称：json2txt_module.py
-功能：提供 JSON 转 TXT 提取函数
-被调用者：main.py
+json2txt_module.py：批量 JSON 转 TXT 脚本
+-功能：提供 JSON 转 TXT 提取函数
+-流程：读取 ocr_out_jsons 文件夹内的所有 JSON 文件 -> 提取文字并按段落处理 -> 生成同名 TXT 文件保存到 ocr_out_texts 文件夹
+-作者：蔡鸿键
 """
-
 import json
 import os
 from tqdm import tqdm

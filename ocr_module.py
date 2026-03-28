@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 模块名称：ocr_module.py
-功能：提供 OCR 批量处理函数
-被调用者：main.py
+-功能：提供 OCR 批量图片处理函数
+-被调用者：main.py
+-流程：读取 BookImages 文件夹图片 -> 识别 -> 将 JSON 结果统一保存到 ocr_out_jsons 文件夹
+-作者：蔡鸿键
 """
 
 from paddleocr import PaddleOCR
