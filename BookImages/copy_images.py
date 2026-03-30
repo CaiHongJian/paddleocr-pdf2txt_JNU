@@ -73,7 +73,7 @@ if __name__ == "__main__":
     SOURCE_FOLDER = r"BookImages\crops"
     
     # 设置：你想生成的目标文件夹名字
-    DEST_FOLDER = r"BookImages\allimages"
+    DEST_FOLDER = r"All_Images"
     
     # 调用函数
     copy_images_from_subdirs(SOURCE_FOLDER, DEST_FOLDER)
