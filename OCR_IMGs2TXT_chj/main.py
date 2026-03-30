@@ -24,7 +24,7 @@ def main():
 
     # 运行 JSON 转 TXT
     # 输入：JSON 文件夹 -> 输出：TXT 文件夹
-    json2txt_module.extract_text(TEMP_JSON_FOLDER, OUTPUT_TEXT_FOLDER)
+    json2txt_module.extract_text(TEMP_JSON_FOLDER, OUTPUT_TEXT_FOLDER, indent_threshold=100)
 
     print("\n 全流程执行完毕！")
 
