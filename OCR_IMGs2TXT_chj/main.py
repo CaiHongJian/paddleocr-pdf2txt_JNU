@@ -11,7 +11,7 @@ import json2txt_module
 
 def main():
     # --- 配置路径 ---
-    INPUT_IMAGE_FOLDER = r"BookImages\allimages"           # 图片文件夹
+    INPUT_IMAGE_FOLDER = r"BookImages\Renamed_All_Images"           # 图片文件夹
     TEMP_JSON_FOLDER = r"OCR_IMGs2TXT_chj\ocr_out_jsons"          # 临时 JSON 文件夹（中间产物）
     OUTPUT_TEXT_FOLDER = r"OCR_IMGs2TXT_chj\ocr_out_texts"        # 最终 TXT 输出文件夹
     # ---------------------------------
@@ -22,7 +22,7 @@ def main():
     # 输入：图片文件夹 -> 输出：JSON 文件夹
     ocr_module.run_ocr(INPUT_IMAGE_FOLDER, TEMP_JSON_FOLDER)
 
-    # 运行 JSON 转 TXT
+    # 运行 JSON 转 TXT，设置缩进阈值为80
     # 输入：JSON 文件夹 -> 输出：TXT 文件夹
     json2txt_module.extract_text(TEMP_JSON_FOLDER, OUTPUT_TEXT_FOLDER, indent_threshold=80)
 
