@@ -1,0 +1,8 @@
+BookImages/All_Images/*.jpg
+BookImages/Renamed_All_Images/*.jpg
+OCR_IMGs2TXT_chj/__pycache__/
+OCR_IMGs2TXT_chj/ocr_out_jsons/ocr_out_jsons/*.json
+OCR_IMGs2TXT_chj/ocr_out_texts/ocr_out_texts/*.txt
+Renamed_All_Images.rar
+汇报_chj/*.docx
+广州市从化区卷一_1-260.pdf
