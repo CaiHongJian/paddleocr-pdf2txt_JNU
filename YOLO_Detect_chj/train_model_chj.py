@@ -6,7 +6,7 @@ from ultralytics import YOLO
 
 if __name__ == "__main__":
 
-    model = YOLO(r"Models_Villages\yolo11n.pt")  # 加载预训练权重
+    model = YOLO(r"Models_Villages\Village_V1.pt")  # 加载预训练权重
     
     model.train(
         # 数据集配置
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         
         # 输出配置
         project="Models_Villages",  # 项目根目录：所有训练结果保存于此文件夹
-        name="VillageModel_V0",    # 实验名称：本次训练结果保存在 TrainResults/[name]/ 下
+        name="VillageModel_V2",    # 实验名称：本次训练结果保存在 TrainResults/[name]/ 下
     )
     
     # 训练完成后输出文件说明：
