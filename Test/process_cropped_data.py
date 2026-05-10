@@ -3,7 +3,7 @@
 处理 crop_by_yolo_with_metadata.py 的输出目录：
     1. 识别每个 title 图片的文字 -> 村名
     2. 识别每个 caption 图片的文字 -> 插图名，并复制对应插图重命名
-    3. 识别所有 txt 图片的 OCR，并按缩进生成段落文本，保存为 村名_数字.txt
+    3. 收集所有 txt 图片的 OCR 文本（带缩进），按页码合并成一个文件，保存为 "序号_村名.txt"
 """
 import os
 import re
@@ -12,13 +12,13 @@ import glob
 import json
 from pathlib import Path
 
-# 导入自定义工具模块
 from util.ocr_utils import ocr_image_to_text, ocr_image_to_json
 from util.txt_extractor import extract_text_from_ocr_json
+from util.txt_merger import parse_page_and_txt_num, merge_txt_segments
 
 # ==================== 辅助函数 ====================
 def sanitize_filename(name):
-    """移除或替换文件名中的非法字符 (Windows/Linux)"""
+    """移除或替换文件名中的非法字符"""
     illegal_chars = r'[\\/*?:"<>|]'
     name = re.sub(illegal_chars, '_', name)
     name = re.sub(r'[\x00-\x1f]', '', name)
@@ -27,18 +27,11 @@ def sanitize_filename(name):
         name = "未命名"
     return name
 
-def parse_numeric_suffix(filename, pattern=r'_txt_(\d+)\.png$'):
-    """从文件名如 Page_022_txt_1.png 中提取数字后缀（如 1）"""
-    match = re.search(pattern, filename)
-    if match:
-        return match.group(1)
-    return None
-
 # ==================== 主处理函数 ====================
 def process_cropped_data(
     input_root,           # Images_village_cropped 目录路径
     output_root,          # 各村OCR结果 目录路径
-    temp_json_dir,        # 存放 OCR 中间 JSON 的临时目录（所有图片共用）
+    temp_json_dir,        # 存放 OCR 中间 JSON 的临时目录
     device="cpu",         # "cpu" 或 "gpu"
     indent_threshold=80   # 缩进判断阈值（像素）
 ):
@@ -53,14 +46,21 @@ def process_cropped_data(
         d for d in os.listdir(input_root)
         if os.path.isdir(os.path.join(input_root, d)) and '_title' in d
     ]
+    # 按页码排序（可选，保证处理顺序与原始PDF一致）
+    title_folders.sort(key=lambda x: int(re.search(r'Page_(\d+)', x).group(1)) if re.search(r'Page_(\d+)', x) else 0)
+
     if not title_folders:
         print(f"在 {input_root} 下未找到任何 title 文件夹")
         return
 
     print(f"共发现 {len(title_folders)} 个 title 文件夹")
+    
+    # 全局计数器，用于生成序号（第几个村子）
+    global_idx = 1
+
     for folder in title_folders:
         folder_path = os.path.join(input_root, folder)
-        print(f"\n正在处理: {folder_path}")
+        print(f"\n正在处理 [{global_idx}] {folder_path}")
 
         # ---------- 1. 识别 title 图片，得到村名 ----------
         title_img_path = None
@@ -73,7 +73,6 @@ def process_cropped_data(
             print(f"  跳过 {folder}: 未找到 title 图片")
             continue
 
-        # 使用稳定的 ocr_image_to_text 函数
         village_name = ocr_image_to_text(
             title_img_path,
             device=device,
@@ -110,7 +109,6 @@ def process_cropped_data(
                     print(f"    跳过: caption 文件不存在 {caption_path}")
                     continue
 
-                # 识别 caption 文字作为插图名
                 caption_text = ocr_image_to_text(
                     caption_path,
                     device=device,
@@ -121,38 +119,64 @@ def process_cropped_data(
                 caption_text = sanitize_filename(caption_text)
 
                 if os.path.exists(img_path):
+                    # 添加后缀防止重名（同一村子下可能有同名 caption）
                     dest_path = os.path.join(village_output_dir, f"{caption_text}.png")
+                    counter = 1
+                    while os.path.exists(dest_path):
+                        dest_path = os.path.join(village_output_dir, f"{caption_text}_{counter}.png")
+                        counter += 1
                     shutil.copy2(img_path, dest_path)
                     print(f"    ✓ 插图已保存: {dest_path}")
                 else:
                     print(f"    警告: 插图文件不存在 {img_path}")
 
-        # ---------- 3. 处理所有 txt 图片（保留段落缩进）----------
-        txt_images = sorted(
-            glob.glob(os.path.join(folder_path, "*txt_*.png")),
-            key=lambda x: int(parse_numeric_suffix(x) or 0)
-        )
-        print(f"  发现 {len(txt_images)} 个 txt 图片")
+        # ---------- 3. 收集所有 txt 图片，准备合并 ----------
+        # 匹配所有 txt_数字.png 文件
+        txt_images = glob.glob(os.path.join(folder_path, "*txt_*.png"))
+        if not txt_images:
+            print(f"  未发现 txt 图片，跳过文本合并")
+        else:
+            segments = []  # 存储每个 txt 图片的片段信息
+            for txt_img_path in txt_images:
+                filename = os.path.basename(txt_img_path)
+                page_num, txt_num = parse_page_and_txt_num(filename)
+                if page_num == 0:
+                    # 如果解析失败，尝试从文件夹名获取页码（但通常文件名已包含）
+                    # 简单处理：跳过或使用默认值
+                    print(f"    警告: 无法从文件名解析页码: {filename}")
+                    continue
 
-        for txt_img_path in txt_images:
-            suffix_num = parse_numeric_suffix(os.path.basename(txt_img_path))
-            if suffix_num is None:
-                continue
+                # 1) OCR 并保存 JSON
+                json_path = ocr_image_to_json(
+                    txt_img_path,
+                    os.path.join(temp_json_dir, "txt"),
+                    device=device
+                )
+                # 2) 从 JSON 提取带缩进的文本
+                formatted_text = extract_text_from_ocr_json(json_path, indent_threshold)
+                if formatted_text:
+                    segments.append({
+                        'page_num': page_num,
+                        'txt_num': txt_num,
+                        'formatted_text': formatted_text
+                    })
+                    print(f"    ✓ 已提取: {filename} (页码 {page_num}, txt编号 {txt_num})")
+                else:
+                    print(f"    ⚠ 提取文本为空: {filename}")
 
-            # 1) 保存 OCR 的 JSON 到临时目录（txt专用子目录）
-            json_path = ocr_image_to_json(
-                txt_img_path,
-                os.path.join(temp_json_dir, "txt"),
-                device=device
-            )
-            # 2) 从 JSON 中提取带缩进的文本
-            formatted_text = extract_text_from_ocr_json(json_path, indent_threshold)
-            # 3) 保存为 村名_数字.txt
-            txt_out_name = f"{village_name}_{suffix_num}.txt"
-            txt_out_path = os.path.join(village_output_dir, txt_out_name)
-            with open(txt_out_path, 'w', encoding='utf-8') as f:
-                f.write(formatted_text)
-            print(f"    ✓ 文本已保存: {txt_out_path}")
+            if segments:
+                # 按页码顺序合并
+                merged_content = merge_txt_segments(segments)
+                # 保存为 "序号_村名.txt"
+                output_txt_name = f"{global_idx}_{village_name}.txt"
+                output_txt_path = os.path.join(village_output_dir, output_txt_name)
+                with open(output_txt_path, 'w', encoding='utf-8') as f:
+                    f.write(merged_content)
+                print(f"    ✓ 合并文本已保存: {output_txt_path} (共 {len(segments)} 个片段)")
+            else:
+                print(f"    ⚠ 没有有效的 txt 片段可合并")
+
+        global_idx += 1
 
     print("\n所有处理完成！")
 
