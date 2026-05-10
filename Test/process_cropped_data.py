@@ -194,7 +194,7 @@ if __name__ == "__main__":
     OUTPUT_ROOT = r"Test\各村OCR结果"                     # 最终输出目录
     TEMP_JSON_DIR = r"Test\OCR_json_Results"               # 临时 JSON 目录
     DEVICE = "cpu"                                  # "cpu" 或 "gpu"
-    INDENT_THRESHOLD = 80                           # 缩进阈值（像素）
+    INDENT_THRESHOLD = 50                           # 缩进阈值（像素）
 
     process_cropped_data(
         input_root=INPUT_ROOT,
