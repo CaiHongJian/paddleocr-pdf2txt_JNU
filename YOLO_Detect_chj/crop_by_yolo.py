@@ -146,77 +146,14 @@ def process_single_image(img_path, txt_path, classes, output_dir):
     return saved_count
 
 
-def process_dataset(
-    images_dir,
-    labels_dir,
-    output_dir,
-    classes_file,
-    split='train'
-):
-    """
-    处理整个数据集（train 或 val）
-    
-    参数:
-        images_dir: 图片根目录 (如 Dataset_village/images)
-        labels_dir: 标注根目录 (如 Dataset_village/labels)
-        output_dir: 输出目录
-        classes_file: classes.txt 路径
-        split: 'train' 或 'val'
-    """
-    # 加载类别
-    classes = load_classes(classes_file)
-    
-    # 创建输出目录
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    
-    # 获取该 split 下的所有图片
-    image_split_dir = os.path.join(images_dir, split)
-    label_split_dir = os.path.join(labels_dir, split)
-    
-    image_files = sorted(glob.glob(os.path.join(image_split_dir, '*.png')) +
-                         glob.glob(os.path.join(image_split_dir, '*.jpg')) +
-                         glob.glob(os.path.join(image_split_dir, '*.jpeg')))
-    
-    total_images = len(image_files)
-    total_crops = 0
-    
-    print(f"\n{'='*60}")
-    print(f"开始处理 {split} 集: 共 {total_images} 张图片")
-    print(f"图片路径: {image_split_dir}")
-    print(f"标注路径: {label_split_dir}")
-    print(f"输出路径: {output_dir}")
-    print(f"{'='*60}")
-    
-    for idx, img_path in enumerate(image_files, 1):
-        img_name = Path(img_path).stem
-        txt_path = os.path.join(label_split_dir, f"{img_name}.txt")
-        
-        # 处理单张图片
-        crops = process_single_image(img_path, txt_path, classes, output_dir)
-        total_crops += crops
-        
-        # 进度显示
-        if idx % 10 == 0 or idx == total_images:
-            print(f"进度: [{idx}/{total_images}] 已裁剪 {total_crops} 个区域")
-    
-    print(f"\n{'='*60}")
-    print(f"{split} 集处理完成!")
-    print(f"处理图片: {total_images} 张")
-    print(f"裁剪区域: {total_crops} 个")
-    print(f"输出目录: {output_dir}")
-    print(f"{'='*60}")
-    
-    return total_crops
-
-
-def process_custom_folder(
+def process_folder(
     images_dir,
     labels_dir,
     output_dir,
     classes_file
 ):
     """
-    处理自定义文件夹（不区分 train/val，直接处理指定文件夹内的所有图片）
+    处理指定文件夹内的所有图片，统一输出到指定目录
     
     参数:
         images_dir: 图片文件夹路径
@@ -241,7 +178,7 @@ def process_custom_folder(
     total_crops = 0
     
     print(f"\n{'='*60}")
-    print(f"自定义模式: 共 {total_images} 张图片")
+    print(f"开始处理: 共 {total_images} 张图片")
     print(f"图片路径: {images_dir}")
     print(f"标注路径: {labels_dir}")
     print(f"输出路径: {output_dir}")
@@ -251,9 +188,11 @@ def process_custom_folder(
         img_name = Path(img_path).stem
         txt_path = os.path.join(labels_dir, f"{img_name}.txt")
         
+        # 处理单张图片
         crops = process_single_image(img_path, txt_path, classes, output_dir)
         total_crops += crops
         
+        # 进度显示
         if idx % 10 == 0 or idx == total_images:
             print(f"进度: [{idx}/{total_images}] 已裁剪 {total_crops} 个区域")
     
@@ -275,67 +214,28 @@ def main():
     # 配置参数（根据你的实际情况修改）
     # ========================================
     
-    # 方式一：处理标准数据集结构（train/val）
-    # 数据集根目录
-    DATASET_ROOT = r"Dataset_village"
+    # 图片文件夹路径
+    IMAGES_DIR = r"Dataset_village\images\val"  # 或 images\val，或任意图片文件夹
     
-    # 路径配置
-    IMAGES_DIR = os.path.join(DATASET_ROOT, "images")
-    LABELS_DIR = os.path.join(DATASET_ROOT, "labels")
-    CLASSES_FILE = os.path.join(DATASET_ROOT, "classes.txt")
+    # 标注文件夹路径
+    LABELS_DIR = r"Dataset_village\labels\val"  # 与图片对应的标注文件夹
     
-    # 输出目录
-    OUTPUT_ROOT = r"Images_village_cropped"
+    # 类别文件路径
+    CLASSES_FILE = r"Dataset_village\classes.txt"
+    
+    # 统一输出目录（所有裁剪结果放在这里，不分 train/val）
+    OUTPUT_DIR = r"Images_village_cropped"
     
     # ========================================
     # 运行处理
     # ========================================
     
-    # 处理训练集
-    print("\n" + "="*60)
-    print("【第一步】处理训练集")
-    print("="*60)
-    train_output = os.path.join(OUTPUT_ROOT, "train")
-    process_dataset(
+    process_folder(
         images_dir=IMAGES_DIR,
         labels_dir=LABELS_DIR,
-        output_dir=train_output,
-        classes_file=CLASSES_FILE,
-        split='train'
-    )
-    
-    # 处理验证集
-    print("\n" + "="*60)
-    print("【第二步】处理验证集")
-    print("="*60)
-    val_output = os.path.join(OUTPUT_ROOT, "val")
-    process_dataset(
-        images_dir=IMAGES_DIR,
-        labels_dir=LABELS_DIR,
-        output_dir=val_output,
-        classes_file=CLASSES_FILE,
-        split='val'
-    )
-    
-    # ========================================
-    # 方式二：处理自定义文件夹（取消注释使用）
-    # ========================================
-    """
-    # 自定义图片文件夹
-    CUSTOM_IMAGES = r"Dataset_village\images"
-    CUSTOM_LABELS = r"Dataset_village\labels"
-    CUSTOM_OUTPUT = r"Images_village_cropped\custom"
-    
-    print("\n" + "="*60)
-    print("【自定义模式】处理指定文件夹")
-    print("="*60)
-    process_custom_folder(
-        images_dir=CUSTOM_IMAGES,
-        labels_dir=CUSTOM_LABELS,
-        output_dir=CUSTOM_OUTPUT,
+        output_dir=OUTPUT_DIR,
         classes_file=CLASSES_FILE
     )
-    """
 
 
 if __name__ == "__main__":
