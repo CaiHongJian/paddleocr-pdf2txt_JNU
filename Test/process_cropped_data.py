@@ -2,8 +2,9 @@
 """
 处理 crop_by_yolo_with_metadata.py 的输出目录：
     1. 识别每个 title 图片的文字 -> 村名
-    2. 识别每个 caption 图片的文字 -> 插图名，并复制对应插图重命名
+    2. 识别每个 caption 图片的文字 -> 插图名，并复制对应插图重命名（去除开头可能多余的 'O' 或 'o'）
     3. 收集所有 txt 图片的 OCR 文本（带缩进），按页码合并成一个文件，保存为 "序号_村名.txt"
+    4. 每个村落的文件夹也命名为 "序号_村名"
 """
 import os
 import re
@@ -27,6 +28,17 @@ def sanitize_filename(name):
         name = "未命名"
     return name
 
+def clean_caption_text(text):
+    """
+    清理 caption 文本：如果第一个字符是 'O' 或 'o'，则去掉该字符并去除后续空白。
+    例如 "O大围村村貌" -> "大围村村貌"
+    """
+    if not text:
+        return text
+    if text[0] in ('O', 'o'):
+        text = text[1:].lstrip()
+    return text
+
 # ==================== 主处理函数 ====================
 def process_cropped_data(
     input_root,           # Images_village_cropped 目录路径
@@ -35,9 +47,6 @@ def process_cropped_data(
     device="cpu",         # "cpu" 或 "gpu"
     indent_threshold=80   # 缩进判断阈值（像素）
 ):
-    """
-    扫描 input_root 下所有以 _title 结尾的文件夹，依次处理。
-    """
     os.makedirs(output_root, exist_ok=True)
     os.makedirs(temp_json_dir, exist_ok=True)
 
@@ -46,7 +55,7 @@ def process_cropped_data(
         d for d in os.listdir(input_root)
         if os.path.isdir(os.path.join(input_root, d)) and '_title' in d
     ]
-    # 按页码排序（可选，保证处理顺序与原始PDF一致）
+    # 按页码排序（保证处理顺序与原始PDF一致）
     title_folders.sort(key=lambda x: int(re.search(r'Page_(\d+)', x).group(1)) if re.search(r'Page_(\d+)', x) else 0)
 
     if not title_folders:
@@ -55,8 +64,7 @@ def process_cropped_data(
 
     print(f"共发现 {len(title_folders)} 个 title 文件夹")
     
-    # 全局计数器，用于生成序号（第几个村子）
-    global_idx = 1
+    global_idx = 1  # 序号从 1 开始
 
     for folder in title_folders:
         folder_path = os.path.join(input_root, folder)
@@ -84,7 +92,9 @@ def process_cropped_data(
         village_name = sanitize_filename(village_name)
         print(f"  识别村名: {village_name}")
 
-        village_output_dir = os.path.join(output_root, village_name)
+        # 带序号的村落文件夹名
+        numbered_folder_name = f"{global_idx}_{village_name}"
+        village_output_dir = os.path.join(output_root, numbered_folder_name)
         os.makedirs(village_output_dir, exist_ok=True)
 
         # ---------- 2. 处理插图（利用 img_caption_metadata.json）----------
@@ -116,10 +126,12 @@ def process_cropped_data(
                 )
                 if not caption_text:
                     caption_text = "无标题插图"
+                # 清理开头可能多余的 'O' 或 'o'
+                caption_text = clean_caption_text(caption_text)
                 caption_text = sanitize_filename(caption_text)
 
                 if os.path.exists(img_path):
-                    # 添加后缀防止重名（同一村子下可能有同名 caption）
+                    # 处理同村同名插图
                     dest_path = os.path.join(village_output_dir, f"{caption_text}.png")
                     counter = 1
                     while os.path.exists(dest_path):
@@ -130,29 +142,25 @@ def process_cropped_data(
                 else:
                     print(f"    警告: 插图文件不存在 {img_path}")
 
-        # ---------- 3. 收集所有 txt 图片，准备合并 ----------
-        # 匹配所有 txt_数字.png 文件
+        # ---------- 3. 收集所有 txt 图片，合并文本 ----------
         txt_images = glob.glob(os.path.join(folder_path, "*txt_*.png"))
         if not txt_images:
             print(f"  未发现 txt 图片，跳过文本合并")
         else:
-            segments = []  # 存储每个 txt 图片的片段信息
+            segments = []
             for txt_img_path in txt_images:
                 filename = os.path.basename(txt_img_path)
                 page_num, txt_num = parse_page_and_txt_num(filename)
                 if page_num == 0:
-                    # 如果解析失败，尝试从文件夹名获取页码（但通常文件名已包含）
-                    # 简单处理：跳过或使用默认值
                     print(f"    警告: 无法从文件名解析页码: {filename}")
                     continue
 
-                # 1) OCR 并保存 JSON
+                # OCR 并保存 JSON
                 json_path = ocr_image_to_json(
                     txt_img_path,
                     os.path.join(temp_json_dir, "txt"),
                     device=device
                 )
-                # 2) 从 JSON 提取带缩进的文本
                 formatted_text = extract_text_from_ocr_json(json_path, indent_threshold)
                 if formatted_text:
                     segments.append({
@@ -165,9 +173,8 @@ def process_cropped_data(
                     print(f"    ⚠ 提取文本为空: {filename}")
 
             if segments:
-                # 按页码顺序合并
                 merged_content = merge_txt_segments(segments)
-                # 保存为 "序号_村名.txt"
+                # TXT 文件名也使用序号前缀
                 output_txt_name = f"{global_idx}_{village_name}.txt"
                 output_txt_path = os.path.join(village_output_dir, output_txt_name)
                 with open(output_txt_path, 'w', encoding='utf-8') as f:
@@ -182,12 +189,12 @@ def process_cropped_data(
 
 # ==================== 主入口 ====================
 if __name__ == "__main__":
-    # ===== 配置参数（请根据实际路径修改）=====
+    # ===== 配置参数（根据实际路径修改）=====
     INPUT_ROOT = r"Test\Images_village_cropped"          # crop_by_yolo_with_metadata 输出目录
     OUTPUT_ROOT = r"Test\各村OCR结果"                     # 最终输出目录
-    TEMP_JSON_DIR = r"Test\OCR_json_Results"               # 存放所有中间 JSON 的临时目录
-    DEVICE = "cpu"                                  # 可选 "cpu" 或 "gpu"
-    INDENT_THRESHOLD = 80                           # 缩进判断阈值（像素）
+    TEMP_JSON_DIR = r"Test\OCR_json_Results"               # 临时 JSON 目录
+    DEVICE = "cpu"                                  # "cpu" 或 "gpu"
+    INDENT_THRESHOLD = 80                           # 缩进阈值（像素）
 
     process_cropped_data(
         input_root=INPUT_ROOT,
