@@ -30,12 +30,12 @@ def sanitize_filename(name):
 
 def clean_caption_text(text):
     """
-    清理 caption 文本：如果第一个字符是 'O' 或 'o'，则去掉该字符并去除后续空白。
+    清理 caption 文本：如果第一个字符是 'O' 或 'o' 或 '0'，则去掉该字符并去除后续空白。
     例如 "O大围村村貌" -> "大围村村貌"
     """
     if not text:
         return text
-    if text[0] in ('O', 'o'):
+    if text[0] in ('O', 'o', '0'):
         text = text[1:].lstrip()
     return text
 
