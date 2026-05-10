@@ -1,9 +1,0 @@
-path: C:\Users\lenxiang\Desktop\Workshop\my_model\datasets\new_datasets
-train: images/train
-val: images/val
-test:
-
-
-names:
-  0: text_left
-  1: text_right
