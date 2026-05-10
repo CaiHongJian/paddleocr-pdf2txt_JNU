@@ -1,0 +1,33 @@
+{
+  "title": "Page_025_title",
+  "pairs": [
+    {
+      "img_filename": "Page_025_img.png",
+      "img_yolo_coords": [
+        0.51996,
+        0.475207,
+        0.777016,
+        0.266458
+      ],
+      "img_abs_coords": {
+        "x1": 326,
+        "y1": 1200,
+        "x2": 2253,
+        "y2": 2135
+      },
+      "caption_filename": "Page_025_caption.png",
+      "caption_yolo_coords": [
+        0.280242,
+        0.622542,
+        0.304032,
+        0.017384
+      ],
+      "caption_abs_coords": {
+        "x1": 318,
+        "y1": 2153,
+        "x2": 1071,
+        "y2": 2215
+      }
+    }
+  ]
+}
