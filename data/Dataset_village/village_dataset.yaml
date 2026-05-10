@@ -1,0 +1,15 @@
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path:  Dataset_village # 推荐使用相对路径。dataset root dir
+train: images/train # train images (relative to 'path') 4 images
+val: images/val # val images (relative to 'path') 4 images
+test: #Dataset_village/images/test # test images (optional)
+
+# Classes
+names:
+  0: title
+  1: caption
+  2: txt_1
+  3: txt_2
+  4: img
+  5: txt_3
+  6: txt_4
