@@ -1,0 +1,7 @@
+title
+caption
+txt_1
+txt_2
+img
+txt_3
+txt_4
