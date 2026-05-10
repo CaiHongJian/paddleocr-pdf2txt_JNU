@@ -6,3 +6,56 @@ OCR_IMGs2TXT_chj/ocr_out_texts/
 Renamed_All_Images.rar
 汇报_chj/*.docx
 广州市从化区卷一_1-260.pdf
+YOLO_Detect_chj/Imgs_testModel/
+YOLO_Detect_chj/Dataset_village/MakeDatasets_chj/AutoYoloLabel Tool_Ultra/__pycache__/
+
+YOLO_Detect_chj/Dataset_village/MakeDatasets_chj/AutoYoloLabel Tool_Ultra/
+YOLO_Detect_chj/Dataset_village/MakeDatasets_chj/README.md
+YOLO_Detect_chj/Dataset_village/MakeDatasets_chj/制作数据集_chj.txt
+
+# 下面是数据集，暂时不传
+YOLO_Detect_chj/Dataset_village/labels/val/
+YOLO_Detect_chj/Dataset_village/labels/train/
+YOLO_Detect_chj/Dataset_village/images/train/
+YOLO_Detect_chj/Dataset_village/images/val/
+YOLO_Detect_chj/Dataset_village/classes.txt
+YOLO_Detect_chj/Dataset_village/village_dataset.yaml
+YOLO_Detect_chj/Dataset_village/labels/*.cache
+
+YOLO_Detect_chj/MakeDatasets_chj/AutoYoloLabel Tool_Ultra/
+YOLO_Detect_chj/PredictResults/labels/
+YOLO_Detect_chj/PredictResults/toDo/images/
+YOLO_Detect_chj/PredictResults/visualized/
+YOLO_Detect_chj/PredictResults/toDo/
+YOLO_Detect_chj/Models_Villages/VillageModel_V1/
+YOLO_Detect_chj/Images_village_cropped/
+Test/Test_Images/
+
+YOLO_Detect_chj/Dataset_village/generate_structure.py
+Test/__pycache__/
+Test/Images_village_cropped/
+Test/各村OCR结果/
+OCR_IMGs2TXT_chj/ocr_out_jsons/
+Test/PP-OCRv5 Example.py
+OCR_IMGs2TXT_chj/ocr_out_jsons/
+Test/参考代码/
+Test/OCR_json_Results/
+Test/util/__pycache__/
+打包发送测试/
+
+
+util/__pycache__/
+
+# 数据集
+data/Dataset_village/images/train/
+data/Dataset_village/images/val/
+data/Dataset_village/labels/train/
+data/Dataset_village/labels/val/
+!data/Dataset_village/village_dataset.yaml
+
+# 临时文件
+# PDF图片标注数据
+data/Temp_data/images_PDF/
+
+
+
