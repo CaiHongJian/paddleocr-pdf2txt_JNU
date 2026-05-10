@@ -1,0 +1,61 @@
+{
+  "title": "Page_022_title",
+  "pairs": [
+    {
+      "img_filename": "Page_022_img.png",
+      "img_yolo_coords": [
+        0.518952,
+        0.372471,
+        0.815323,
+        0.327159
+      ],
+      "img_abs_coords": {
+        "x1": 276,
+        "y1": 733,
+        "x2": 2298,
+        "y2": 1881
+      },
+      "caption_filename": "Page_022_caption.png",
+      "caption_yolo_coords": [
+        0.267742,
+        0.551867,
+        0.316129,
+        0.012254
+      ],
+      "caption_abs_coords": {
+        "x1": 272,
+        "y1": 1915,
+        "x2": 1056,
+        "y2": 1958
+      }
+    },
+    {
+      "img_filename": "Page_023_img.png",
+      "img_yolo_coords": [
+        0.708266,
+        0.19678,
+        0.375403,
+        0.137076
+      ],
+      "img_abs_coords": {
+        "x1": 1290,
+        "y1": 450,
+        "x2": 2221,
+        "y2": 931
+      },
+      "caption_filename": "Page_023_caption.png",
+      "caption_yolo_coords": [
+        0.628226,
+        0.283842,
+        0.218548,
+        0.013109
+      ],
+      "caption_abs_coords": {
+        "x1": 1287,
+        "y1": 973,
+        "x2": 1829,
+        "y2": 1019
+      }
+    }
+  ]
+}
