@@ -1,0 +1,76 @@
+{
+    "input_path": "data\\Temp_data\\images_cropped_villages\\Page_022_title\\Page_023_caption.png",
+    "page_index": null,
+    "model_settings": {
+        "use_doc_preprocessor": false,
+        "use_textline_orientation": false
+    },
+    "dt_polys": [
+        [
+            [
+                2,
+                4
+            ],
+            [
+                526,
+                1
+            ],
+            [
+                526,
+                38
+            ],
+            [
+                2,
+                40
+            ]
+        ]
+    ],
+    "text_det_params": {
+        "limit_side_len": 64,
+        "limit_type": "min",
+        "thresh": 0.3,
+        "max_side_limit": 4000,
+        "box_thresh": 0.6,
+        "unclip_ratio": 1.5
+    },
+    "text_type": "general",
+    "textline_orientation_angles": [
+        -1
+    ],
+    "text_rec_score_thresh": 0.0,
+    "return_word_box": false,
+    "rec_texts": [
+        "门楼（摄于2016年，温泉镇提供）"
+    ],
+    "rec_scores": [
+        0.9881790280342102
+    ],
+    "rec_polys": [
+        [
+            [
+                2,
+                4
+            ],
+            [
+                526,
+                1
+            ],
+            [
+                526,
+                38
+            ],
+            [
+                2,
+                40
+            ]
+        ]
+    ],
+    "rec_boxes": [
+        [
+            2,
+            1,
+            526,
+            40
+        ]
+    ]
+}

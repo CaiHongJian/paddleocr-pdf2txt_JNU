@@ -1,0 +1,76 @@
+{
+    "input_path": "data\\Temp_data\\images_cropped_villages\\Page_022_title\\Page_022_title.png",
+    "page_index": null,
+    "model_settings": {
+        "use_doc_preprocessor": false,
+        "use_textline_orientation": false
+    },
+    "dt_polys": [
+        [
+            [
+                0,
+                0
+            ],
+            [
+                257,
+                0
+            ],
+            [
+                257,
+                73
+            ],
+            [
+                0,
+                73
+            ]
+        ]
+    ],
+    "text_det_params": {
+        "limit_side_len": 64,
+        "limit_type": "min",
+        "thresh": 0.3,
+        "max_side_limit": 4000,
+        "box_thresh": 0.6,
+        "unclip_ratio": 1.5
+    },
+    "text_type": "general",
+    "textline_orientation_angles": [
+        -1
+    ],
+    "text_rec_score_thresh": 0.0,
+    "return_word_box": false,
+    "rec_texts": [
+        "大围村"
+    ],
+    "rec_scores": [
+        0.9978218674659729
+    ],
+    "rec_polys": [
+        [
+            [
+                0,
+                0
+            ],
+            [
+                257,
+                0
+            ],
+            [
+                257,
+                73
+            ],
+            [
+                0,
+                73
+            ]
+        ]
+    ],
+    "rec_boxes": [
+        [
+            0,
+            0,
+            257,
+            73
+        ]
+    ]
+}
