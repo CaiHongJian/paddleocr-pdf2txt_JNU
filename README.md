@@ -82,11 +82,15 @@ paddleocr-pdf2txt_JNU/
 - 批量检测所有PDF页面图片
 - 输出YOLO格式的标注文件（.txt）
 
-检测类别通常包含：
+检测类别包含（见classes.txt）：
 - `title`：村落标题
-- `txt`：正文文本
-- `img`：插图
 - `caption`：插图附文
+- `txt_1`：正文片段1
+- `txt_2`：正文片段2
+- `img`：插图图片
+- `txt_3`：正文片段3
+- `txt_4`：正文片段4
+
 
 ### 步骤3：智能分割归档
 **文件**：`pipelines/Step2_Crop_by_YOLO_Label/crop_by_yolo_with_metadata.py`
