@@ -19,48 +19,128 @@
 
 ```
 paddleocr-pdf2txt_JNU/
-├── data/                          # 数据目录
-│   ├── Dataset_village/           # 村落数据集
-│   │   ├── classes.txt            # 类别定义文件
-│   │   ├── village_dataset.yaml   # YOLO数据集配置
-│   │   └── 数据集文件结构.md
-│   ├── Final_output/             # 最终输出结果
-│   │   └── 广州市从化区卷一_1-260.txt
-│   └── Temp_data/                # 临时数据目录
-│       └── images_cropped_villages/  # 按村落标题分类裁剪的中间结果
-│           └── Page_022_title/   # 单个村落的裁剪目录
-│               ├── img_caption_metadata.json  # 插图-图注配对元数据
-│               └── 各类裁剪图片
-├── docs/                          # 文档目录
-│   ├── 汇报记录/                  # 项目汇报文档
+├── data/                              # 数据目录
+│   ├── Dataset_village/               # 村落数据集（YOLO训练用）
+│   │   ├── images/                    # 图片目录
+│   │   │   ├── train/                 # 训练集图片（约130张）
+│   │   │   │   ├── Page_022.png
+│   │   │   │   ├── Page_023.png
+│   │   │   │   └── ... (Page_024~Page_180)
+│   │   │   └── val/                   # 验证集图片（约70张）
+│   │   │       ├── Page_032.png
+│   │   │       ├── Page_033.png
+│   │   │       └── ... (Page_034~Page_260)
+│   │   ├── labels/                    # 标注目录（YOLO格式）
+│   │   │   ├── train/                 # 训练集标注（.txt文件）
+│   │   │   └── val/                   # 验证集标注（.txt文件）
+│   │   ├── classes.txt                # 类别定义文件（7个类别）
+│   │   ├── village_dataset.yaml       # YOLO数据集配置文件
+│   │   └── 数据集文件结构.md          # 数据集说明文档
+│   │
+│   ├── Final_output/                  # 最终输出结果目录
+│   │   ├── 各村OCR结果/               # 各村落的OCR结果（按"序号_村名"组织）
+│   │   │   ├── 1_大围村/
+│   │   │   │   ├── 1_大围村.txt       # 该村正文描述文档
+│   │   │   │   └── *.png              # 该村的插图文件
+│   │   │   ├── 2_沙岗村/
+│   │   │   └── ...
+│   │   └── 广州市从化区卷一_1-260.txt  # 全书合并文本
+│   │
+│   └── Temp_data/                     # 临时数据目录（中间结果）
+│       ├── images_PDF/                # PDF转换后的图片及YOLO标注
+│       │   ├── Page_022.png           # PDF页面图片
+│       │   ├── Page_022.txt           # YOLO检测标注文件
+│       │   ├── Page_023.png
+│       │   ├── Page_023.txt
+│       │   └── ...
+│       ├── images_cropped_villages/   # 按村落标题分类裁剪的结果
+│       │   ├── Page_022_title/        # 单个村落的裁剪目录
+│       │   │   ├── Page_022_title.png     # 村落标题图片
+│       │   │   ├── Page_022_txt_1.png     # 正文片段1
+│       │   │   ├── Page_022_txt_2.png     # 正文片段2
+│       │   │   ├── Page_022_img.png       # 插图图片
+│       │   │   ├── Page_022_caption.png   # 图注文字
+│       │   │   └── img_caption_metadata.json  # 插图-图注配对元数据
+│       │   ├── Page_025_title/
+│       │   │   ├── Page_025_title.png
+│       │   │   ├── Page_025_txt_3.png
+│       │   │   ├── Page_025_txt_4.png
+│       │   │   ├── Page_025_img.png
+│       │   │   ├── Page_025_caption.png
+│       │   │   └── img_caption_metadata.json
+│       │   └── ...
+│       └── ocr_json_results/          # OCR中间JSON结果（可选）
+│
+├── docs/                              # 文档目录
+│   ├── 汇报记录/                      # 项目汇报文档
+│   │   ├── 汇报_chj_20260414.docx
+│   │   └── 汇报_chj_20260414.md
 │   ├── crop_by_yolo_with_metadata输出格式.md
 │   └── 各村OCR结果文件结构.md
-├── models/                        # 模型文件目录
-│   ├── Model_xhao/                # 布局检测模型
-│   │   ├── detect_layout.pt
-│   │   └── detect_text.pt
-│   ├── Village_Model_chj/         # 村落专用检测模型_chj
-│   │   ├── Village_V0.pt
-│   │   ├── Village_V1.pt
-│   │   ├── classes.txt
-│   │   └── village_dataset.yaml
-│   └── yolo11n.pt                 # YOLO11n预训练模型
-├── pipelines/                     # 流水线脚本目录
-│   ├── Step1_YOLO_detect/         # 步骤1：YOLO检测
-│   │   ├── predict_images.py      # 图片预测脚本
-│   │   └── train_model_chj.py     # YOLO模型训练脚本
-│   └── Step2_Crop_by_YOLO_Label/  # 步骤2：按标注裁剪
+│
+├── models/                            # 模型文件目录
+│   ├── Model_xhao/                    # 布局检测模型
+│   │   ├── detect_layout.pt           # 版面布局检测模型
+│   │   └── detect_text.pt             # 文本区域检测模型
+│   ├── Village_Model_chj/             # 村落专用检测模型
+│   │   ├── Village_V0.pt              # 模型版本V0
+│   │   ├── Village_V1.pt              # 模型版本V1
+│   │   ├── classes.txt                # 类别定义
+│   │   └── village_dataset.yaml       # 数据集配置
+│   └── yolo11n.pt                     # YOLO11n预训练模型
+│
+├── pipelines/                         # 流水线脚本目录
+│   ├── Step1_YOLO_detect/             # 步骤1：YOLO检测
+│   │   ├── predict_images.py          # 图片预测脚本
+│   │   └── train_model_chj.py         # YOLO模型训练脚本
+│   └── Step2_Crop_by_YOLO_Label/      # 步骤2：按标注裁剪
 │       └── crop_by_yolo_with_metadata.py  # 增强版分割归档脚本
-├── util/                          # 工具模块目录
-│   ├── detect_pdf_yolo_xhao.py    # PDF级别的YOLO检测
-│   ├── ocr_utils.py               # PaddleOCR工具封装
-│   ├── pdf_to_images.py           # PDF转图片工具
-│   ├── txt_extractor.py           # 带缩进判断的文本提取
-│   └── txt_merger.py              # 多片段文本合并
-├── .gitignore                     # Git忽略文件配置
-├── process_cropped_data.py       # 主处理脚本：处理裁剪数据并生成最终结果
-└── README.md                      # 项目说明文档
+│
+├── util/                              # 工具模块目录
+│   ├── detect_pdf_yolo_xhao.py        # PDF级别的YOLO检测
+│   ├── ocr_utils.py                   # PaddleOCR工具封装
+│   ├── pdf_to_images.py               # PDF转图片工具
+│   ├── txt_extractor.py               # 带缩进判断的文本提取
+│   └── txt_merger.py                  # 多片段文本合并
+│
+├── .gitignore                         # Git忽略文件配置
+├── process_cropped_data.py            # 主处理脚本：处理裁剪数据并生成最终结果
+└── README.md                          # 项目说明文档
 ```
+
+### data目录详细说明
+
+#### 1. Dataset_village/ - YOLO训练数据集
+用于训练村落元素检测模型的数据集，采用标准YOLO格式组织：
+
+| 子目录 | 说明 |
+|--------|------|
+| `images/train/` | 训练集图片，约130张Page_xxx.png |
+| `images/val/` | 验证集图片，约70张Page_xxx.png |
+| `labels/train/` | 训练集标注，与图片同名的.txt文件 |
+| `labels/val/` | 验证集标注，与图片同名的.txt文件 |
+
+**classes.txt 定义的7个检测类别**：
+```
+0: title    - 村落标题
+1: caption  - 图注文字
+2: txt_1    - 正文片段1
+3: txt_2    - 正文片段2
+4: img      - 插图图片
+5: txt_3    - 正文片段3
+6: txt_4    - 正文片段4
+```
+
+#### 2. Final_output/ - 最终输出结果
+处理完成后生成的各村OCR结果：
+- `各村OCR结果/` - 按"序号_村名"组织的目录，每个目录包含正文txt和插图
+- `广州市从化区卷一_1-260.txt` - 全书合并后的完整文本
+
+#### 3. Temp_data/ - 临时中间数据
+流水线处理过程中产生的中间结果：
+- `images_PDF/` - PDF转换后的页面图片及YOLO检测标注
+- `images_cropped_villages/` - 按村落标题分类裁剪的图片，含元数据JSON
+- `ocr_json_results/` - OCR识别的中间JSON结果（可选保留）
 
 ---
 
