@@ -1,0 +1,121 @@
+{
+    "input_path": "data\\Temp_data\\images_cropped_villages\\Page_025_title\\Page_025_caption.png",
+    "page_index": null,
+    "model_settings": {
+        "use_doc_preprocessor": false,
+        "use_textline_orientation": false
+    },
+    "dt_polys": [
+        [
+            [
+                5,
+                10
+            ],
+            [
+                55,
+                10
+            ],
+            [
+                55,
+                45
+            ],
+            [
+                5,
+                45
+            ]
+        ],
+        [
+            [
+                60,
+                9
+            ],
+            [
+                728,
+                13
+            ],
+            [
+                727,
+                49
+            ],
+            [
+                60,
+                44
+            ]
+        ]
+    ],
+    "text_det_params": {
+        "limit_side_len": 64,
+        "limit_type": "min",
+        "thresh": 0.3,
+        "max_side_limit": 4000,
+        "box_thresh": 0.6,
+        "unclip_ratio": 1.5
+    },
+    "text_type": "general",
+    "textline_orientation_angles": [
+        -1,
+        -1
+    ],
+    "text_rec_score_thresh": 0.0,
+    "return_word_box": false,
+    "rec_texts": [
+        "o",
+        "沙岗村村貌（摄于2017年，从化区档案局提供）"
+    ],
+    "rec_scores": [
+        0.3908711373806,
+        0.9959511160850525
+    ],
+    "rec_polys": [
+        [
+            [
+                5,
+                10
+            ],
+            [
+                55,
+                10
+            ],
+            [
+                55,
+                45
+            ],
+            [
+                5,
+                45
+            ]
+        ],
+        [
+            [
+                60,
+                9
+            ],
+            [
+                728,
+                13
+            ],
+            [
+                727,
+                49
+            ],
+            [
+                60,
+                44
+            ]
+        ]
+    ],
+    "rec_boxes": [
+        [
+            5,
+            10,
+            55,
+            45
+        ],
+        [
+            60,
+            9,
+            728,
+            49
+        ]
+    ]
+}
