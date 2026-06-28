@@ -92,12 +92,13 @@ paddleocr-pdf2txt_JNU/
 ├── pipelines/                         # 流水线脚本目录
 │   ├── Step1_YOLO_detect/             # 步骤1：YOLO检测
 │   │   ├── predict_images.py          # 图片预测脚本
+│   │   ├── detect_pdf_yolo_xhao.py    # 利用自训练YOLO模型，检测坐标
 │   │   └── train_model_chj.py         # YOLO模型训练脚本
 │   └── Step2_Crop_by_YOLO_Label/      # 步骤2：按标注裁剪
 │       └── crop_by_yolo_with_metadata.py  # 增强版分割归档脚本
 │
 ├── util/                              # 工具模块目录
-│   ├── detect_pdf_yolo_xhao.py        # PDF级别的YOLO检测
+│   
 │   ├── ocr_utils.py                   # PaddleOCR工具封装
 │   ├── pdf_to_images.py               # PDF转图片工具
 │   ├── txt_extractor.py               # 带缩进判断的文本提取
