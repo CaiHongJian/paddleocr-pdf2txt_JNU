@@ -2,8 +2,6 @@
 Author: 熊浩
 Date: 2026-05-10
 Description: 整合正文模型和布局模型，按固定类别顺序输出 YOLO 标注文件，并生成可视化框选结果。
-
-Modified by: 蔡鸿键, 2026-06-29, 修复正文框排序逻辑，改为按左上角坐标全局从上到下、从左到右排序，更符合阅读顺序
 """
 
 import os
@@ -29,41 +27,40 @@ COLORS = {
     'txt_4': (255, 128, 0),  # 橙色
 }
 
-
 def get_ordered_text_boxes(boxes, model_names, img_width):
     """
-    从正文模型的检测结果中提取所有文本框，按左上角坐标排序后分配类别名。
-    
-    [修改人: 蔡鸿键, 修改日期: 2026-06-29]
-    修改内容：排序方式改为根据文本框左上角坐标 (x1, y1)，
-    先按 y 坐标从上到下排序（y1 小的优先），再按 x 坐标从左到右排序（x1 小的优先），
-    使正文块编号完全遵循自然阅读顺序。
-    
+    从正文模型的检测结果中提取左右栏文本框，按阅读顺序排序。
     返回列表，每个元素为 (class_name, xywhn)，
-    其中 class_name 为 'txt_1', 'txt_2', 'txt_3', 'txt_4'（最多4个）。
+    其中 class_name 为 'txt_1', 'txt_2', ... 按实际顺序。
     """
     detections = []
     for box in boxes:
         cls = int(box.cls)
         cls_name = model_names[cls]
-        # 只保留正文模型的文本框（通常类别名含 left 或 right）
+        # 假设正文模型的类别名包含 'left' 或 'right'
         if 'left' not in cls_name.lower() and 'right' not in cls_name.lower():
             continue
         xyxy = box.xyxy[0].cpu().numpy()
         x1, y1, x2, y2 = xyxy
+        center_x = (x1 + x2) / 2
+        center_y = (y1 + y2) / 2
+        is_left = center_x < img_width * 0.5
         xywhn = box.xywhn[0].tolist()  # [x_center, y_center, width, height]
         detections.append({
             'xywhn': xywhn,
-            'x1': x1,
-            'y1': y1
+            'center_y': center_y,
+            'is_left': is_left
         })
-
-    # [修改人: 蔡鸿键, 2026-06-29] 按左上角坐标排序：先 y（行），再 x（列）
-    detections.sort(key=lambda d: (d['y1'], d['x1']))
-
-    # 分配类别名，最多到 txt_4
+    # 分离左右栏
+    left = [d for d in detections if d['is_left']]
+    right = [d for d in detections if not d['is_left']]
+    left.sort(key=lambda x: x['center_y'])
+    right.sort(key=lambda x: x['center_y'])
+    # 合并：先左后右
+    ordered = left + right
+    # 分配类别名 txt_1, txt_2, ...（最多到 txt_4，但可扩展）
     results = []
-    for idx, det in enumerate(detections, start=1):
+    for idx, det in enumerate(ordered, start=1):
         txt_name = f'txt_{idx}'
         if txt_name not in CLASS_TO_ID:
             # 如果超过预定义的 txt_4，可以忽略或继续添加（但 classes.txt 中没有，建议忽略）
@@ -71,7 +68,6 @@ def get_ordered_text_boxes(boxes, model_names, img_width):
             continue
         results.append((txt_name, det['xywhn']))
     return results
-
 
 def get_layout_boxes(boxes, model_names):
     """
@@ -86,7 +82,6 @@ def get_layout_boxes(boxes, model_names):
             xywhn = box.xywhn[0].tolist()
             results.append((cls_name, xywhn))
     return results
-
 
 def draw_boxes_on_image(image, boxes, class_names):
     """
@@ -121,7 +116,6 @@ def draw_boxes_on_image(image, boxes, class_names):
         # 绘制文本
         cv2.putText(image, label, (x1, y1 - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
     return image
-
 
 def batch_detect_combined(
     model_text_path: str,
