@@ -262,9 +262,11 @@ def batch_detect_combined(
 
 if __name__ == '__main__':
     # ========== 配置参数 ==========
-    MODEL_TEXT = r"detect_text.pt"      # 正文模型（输出 left/right）
-    MODEL_LAYOUT = r"detect_layout.pt"  # 布局模型（输出 title/caption/img）
+    MODEL_TEXT = r"models\Model_xhao\detect_text.pt"      # 正文模型（输出 left/right）
+    MODEL_LAYOUT = r"models\Model_xhao\detect_layout.pt"  # 布局模型（输出 title/caption/img）
+    # 输入目录：从此目录读取待检测的所有图片文件以及标签文件
     INPUT_DIR = r"data\Temp_data\images_PDF"
+    # 输出目录：检测结果、标签文件、可视化图片
     OUTPUT_DIR = r"data\Temp_data\images_PDF"
     # ==============================
 
