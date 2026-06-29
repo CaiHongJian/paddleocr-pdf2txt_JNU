@@ -1,17 +1,17 @@
-# paddleocr-pdf2txt_JNU
+﻿# paddleocr-pdf2txt_JNU
 
-基于PaddleOCR与YOLO的双栏PDF正文提取系统。专门用于处理《全粤村情》PDF文档，实现村落名称识别、正文提取、插图分离等全流程自动化。隶属于张子邦光电创新实验课程小组。
+基于 PaddleOCR 与 YOLO 的双栏 PDF 正文提取系统，专门用于处理《全粤村情》文档。系统实现从 PDF 解析、目标检测、裁剪归档、OCR 识别到按村落输出的最终自动化流水线。
 
 ## 项目功能概述
 
-本项目实现了从PDF文档中自动化提取各村村落信息的完整流水线：
+本项目实现了从 PDF 文档中自动提取各村村落信息的完整流程：
 
-1. **PDF转图片**：将PDF文档批量转换为高清图片
-2. **YOLO目标检测**：使用YOLO模型识别页面中的不同元素（标题、正文、插图、图注等）
-3. **智能分割归档**：根据检测结果裁剪图片，并按村落标题归属自动分类归档
-4. **OCR文字识别**：使用PaddleOCR对裁剪后的图片进行文字识别
-5. **智能文本合并**：根据缩进判断段落结构，自动合并同一村落的完整文本
-6. **插图重命名**：通过识别图注文字为插图自动命名
+1. **PDF 转图片**：将 PDF 文档批量转换为高清图片
+2. **YOLO 目标检测**：识别页面中的标题、正文、插图、图注等元素
+3. **智能分割归档**：根据检测结果裁剪图片，并按村落标题归属自动分类
+4. **OCR 文字识别**：使用 PaddleOCR 对裁剪图片进行文字识别
+5. **智能文本合并**：根据缩进规则判断段落结构，合并同一村落的完整文本
+6. **插图重命名**：识别图注文字并作为插图文件名保存
 
 ---
 
@@ -19,109 +19,54 @@
 
 ```
 paddleocr-pdf2txt_JNU/
-├── data/                              # 数据目录
-│   ├── Dataset_village/               # 村落数据集（YOLO训练用）
-│   │   ├── images/                    # 图片目录
-│   │   │   ├── train/                 # 训练集图片（约130张）
-│   │   │   │   ├── Page_022.png
-│   │   │   │   ├── Page_023.png
-│   │   │   │   └── ... (Page_024~Page_180)
-│   │   │   └── val/                   # 验证集图片（约70张）
-│   │   │       ├── Page_032.png
-│   │   │       ├── Page_033.png
-│   │   │       └── ... (Page_034~Page_260)
-│   │   ├── labels/                    # 标注目录（YOLO格式）
-│   │   │   ├── train/                 # 训练集标注（.txt文件）
-│   │   │   └── val/                   # 验证集标注（.txt文件）
-│   │   ├── classes.txt                # 类别定义文件（7个类别）
-│   │   ├── village_dataset.yaml       # YOLO数据集配置文件
-│   │   └── 数据集文件结构.md          # 数据集说明文档
-│   │
-│   ├── Final_output/                  # 最终输出结果目录
-│   │   ├── 各村OCR结果/               # 各村落的OCR结果（按"序号_村名"组织）
-│   │   │   ├── 1_大围村/
-│   │   │   │   ├── 1_大围村.txt       # 该村正文描述文档
-│   │   │   │   └── *.png              # 该村的插图文件
-│   │   │   ├── 2_沙岗村/
-│   │   │   └── ...
-│   │   └── 广州市从化区卷一_1-260.txt  # 全书合并文本
-│   │
-│   └── Temp_data/                     # 临时数据目录（中间结果）
-│       ├── images_PDF/                # PDF转换后的图片及YOLO标注
-│       │   ├── Page_022.png           # PDF页面图片
-│       │   ├── Page_022.txt           # YOLO检测标注文件
-│       │   ├── Page_023.png
-│       │   ├── Page_023.txt
-│       │   └── ...
+├── data/
+│   ├── Dataset_village/         # 部分村落数据集（YOLO训练用）
+│   │   ├── images/
+│   │   │   ├── train/
+│   │   │   └── val/
+│   │   ├── labels/
+│   │   │   ├── train/
+│   │   │   └── val/
+│   │   ├── classes.txt
+│   │   ├── village_dataset.yaml
+│   │   └── 数据集文件结构.md
+│   ├── Final_output/            # 最终输出结果目录
+│   │   ├── 各村OCR结果/
+│   │   └── 广州市从化区卷一_1-260.txt
+│   └── Temp_data/               # 临时数据目录（中间结果）
+│       ├── images_PDF/          # 存放PDF转换后的图片及YOLO标注图片
 │       ├── images_cropped_villages/   # 按村落标题分类裁剪的结果
-│       │   ├── Page_022_title/        # 单个村落的裁剪目录
-│       │   │   ├── Page_022_title.png     # 村落标题图片
-│       │   │   ├── Page_022_txt_1.png     # 正文片段1
-│       │   │   ├── Page_022_txt_2.png     # 正文片段2
-│       │   │   ├── Page_022_img.png       # 插图图片
-│       │   │   ├── Page_022_caption.png   # 图注文字
-│       │   │   └── img_caption_metadata.json  # 插图-图注配对元数据
-│       │   ├── Page_025_title/
-│       │   │   ├── Page_025_title.png
-│       │   │   ├── Page_025_txt_3.png
-│       │   │   ├── Page_025_txt_4.png
-│       │   │   ├── Page_025_img.png
-│       │   │   ├── Page_025_caption.png
-│       │   │   └── img_caption_metadata.json
-│       │   └── ...
-│       └── ocr_json_results/          # OCR中间JSON结果（可选）
-│
-├── docs/                              # 文档目录
-│   ├── 汇报记录/                      # 项目汇报文档
-│   │   ├── 汇报_chj_20260414.docx
-│   │   └── 汇报_chj_20260414.md
+│       └── ocr_json_results/
+├── docs/                       # 文档目录
+│   ├── 汇报记录/
 │   ├── crop_by_yolo_with_metadata输出格式.md
 │   └── 各村OCR结果文件结构.md
-│
 ├── models/                            # 模型文件目录
-│   ├── Model_xhao/                    # 布局检测模型
+│   ├── Model_xhao/
 │   │   ├── detect_layout.pt           # 版面布局检测模型
 │   │   └── detect_text.pt             # 文本区域检测模型
-│   ├── Village_Model_chj/             # 村落专用检测模型
-│   │   ├── Village_V0.pt              # 模型版本V0
-│   │   ├── Village_V1.pt              # 模型版本V1
-│   │   ├── classes.txt                # 类别定义
-│   │   └── village_dataset.yaml       # 数据集配置
-│   └── yolo11n.pt                     # YOLO11n预训练模型
-│
-├── pipelines/                         # 流水线脚本目录
-│   ├── Step1_YOLO_detect/             # 步骤1：YOLO检测
-│   │   ├── predict_images.py          # 图片预测脚本
-│   │   ├── detect_pdf_yolo_xhao.py    # 利用自训练YOLO模型，检测坐标
-│   │   └── train_model_chj.py         # YOLO模型训练脚本
-│   └── Step2_Crop_by_YOLO_Label/      # 步骤2：按标注裁剪
-│       └── crop_by_yolo_with_metadata.py  # 增强版分割归档脚本
-│
-├── util/                              # 工具模块目录
-│   
-│   ├── ocr_utils.py                   # PaddleOCR工具封装
-│   ├── pdf_to_images.py               # PDF转图片工具
-│   ├── txt_extractor.py               # 带缩进判断的文本提取
-│   └── txt_merger.py                  # 多片段文本合并
-│
-├── .gitignore                         # Git忽略文件配置
-├── process_cropped_data.py            # 主处理脚本：处理裁剪数据并生成最终结果
-└── README.md                          # 项目说明文档
+│   ├── Village_Model_chj/             # （废弃）
+│   └── yolo11n.pt
+├── pipelines/
+│   ├── Step1_YOLO_detect/
+│   │   └── detect_pdf_yolo_xhao.py
+│   └── Step2_Crop_by_YOLO_Label/
+│       └── crop_by_yolo_with_metadata.py
+├── util/
+│   ├── ocr_utils.py
+│   ├── pdf_to_images.py
+│   ├── txt_extractor.py
+│   └── txt_merger.py
+├── process_cropped_data.py
+├── .gitignore
+└── README.md
 ```
 
-### data目录详细说明
+### data 目录说明
 
-#### 1. Dataset_village/ - YOLO训练数据集
-用于训练村落元素检测模型的数据集，采用标准YOLO格式组织：
+#### 1. Dataset_village/ - YOLO 训练数据集
 
-| 子目录 | 说明 |
-|--------|------|
-| `images/train/` | 训练集图片，约130张Page_xxx.png |
-| `images/val/` | 验证集图片，约70张Page_xxx.png |
-| `labels/train/` | 训练集标注，与图片同名的.txt文件 |
-| `labels/val/` | 验证集标注，与图片同名的.txt文件 |
-
-**classes.txt 定义的7个检测类别**：
+**classes.txt 定义的 7 个检测类别**：
 ```
 0: title    - 村落标题
 1: caption  - 图注文字
@@ -133,35 +78,34 @@ paddleocr-pdf2txt_JNU/
 ```
 
 #### 2. Final_output/ - 最终输出结果
-处理完成后生成的各村OCR结果：
-- `各村OCR结果/` - 按"序号_村名"组织的目录，每个目录包含正文txt和插图
-- `广州市从化区卷一_1-260.txt` - 全书合并后的完整文本
+- `各村OCR结果/`：按 `序号_村名` 组织的每个村落目录
+- `广州市从化区卷一_1-260.txt`：全书合并后的完整文本
 
-#### 3. Temp_data/ - 临时中间数据
-流水线处理过程中产生的中间结果：
-- `images_PDF/` - PDF转换后的页面图片及YOLO检测标注
-- `images_cropped_villages/` - 按村落标题分类裁剪的图片，含元数据JSON
-- `ocr_json_results/` - OCR识别的中间JSON结果（可选保留）
+#### 3. Temp_data/ - 中间结果目录
+- `images_PDF/`：PDF 转换后图片及 YOLO 检测标注
+- `images_cropped_villages/`：按标题分类裁剪后的图片及元数据
+- `ocr_json_results/`：OCR 中间 JSON 结果
 
 ---
 
-## 流水线详细说明
+## 流水线说明
 
-### 步骤1：PDF转图片
+### 步骤 1：PDF 转图片
 **文件**：`util/pdf_to_images.py`
 
 功能：
-- 交互式输入PDF路径和输出目录
-- 使用PyMuPDF将PDF每页转换为300DPI高清PNG图片
-- 自动按 `Page_001.png`、`Page_002.png` 格式命名
+- 交互式输入 PDF 文件路径
+- 输入输出目录后自动将 PDF 每页转为300 DPI PNG图片
+- 按 `Page_001.png`、`Page_002.png` 命名输出
 
-### 步骤2：YOLO目标检测
-**文件**：`pipelines/Step1_YOLO_detect/predict_images.py`
+> 运行后会提示输入源 PDF 和图片保存目录，执行完成后按回车退出。
 
-功能：
-- 加载训练好的YOLO模型
-- 批量检测所有PDF页面图片
-- 输出YOLO格式的标注文件（.txt）
+### 步骤 2：YOLO 目标检测
+**文件**：
+- `pipelines/Step1_YOLO_detect/detect_pdf_yolo_xhao.py`
+
+说明：
+- `detect_pdf_yolo_xhao.py`：整合布局模型与正文模型，按固定类别顺序输出 YOLO 标注并生成可视化图
 
 检测类别包含（见classes.txt）：
 - `title`：村落标题
@@ -172,8 +116,7 @@ paddleocr-pdf2txt_JNU/
 - `txt_3`：正文片段3
 - `txt_4`：正文片段4
 
-
-### 步骤3：智能分割归档
+### 步骤 3：智能分割归档
 **文件**：`pipelines/Step2_Crop_by_YOLO_Label/crop_by_yolo_with_metadata.py`
 
 核心特性：
@@ -188,20 +131,18 @@ paddleocr-pdf2txt_JNU/
    - 规则：每个caption匹配其上方最近的img（y_center在caption下方且距离最小）
    - 生成 `img_caption_metadata.json` 记录配对信息
 
-输出目录结构示例：
+输出示例：
 ```
-images_cropped_villages/
+data/Temp_data/images_cropped_villages/
 ├── Page_022_title/
 │   ├── Page_022_title.png
 │   ├── Page_022_txt_1.png
 │   ├── Page_022_img.png
 │   ├── Page_022_caption.png
 │   └── img_caption_metadata.json
-├── Page_022_title/
-└── ...
 ```
 
-### 步骤4：OCR识别与最终结果生成
+### 步骤 4：OCR 识别与最终结果生成
 **文件**：`process_cropped_data.py`
 
 处理流程：
@@ -231,16 +172,10 @@ images_cropped_villages/
 ---
 
 ## 环境配置
-
-### 基础环境要求
-- **操作系统**：Windows 10/11
-- **Python版本**：Python 3.8 ~ 3.11（推荐3.10）
-- **内存**：建议 8GB+
-- **GPU（可选）**：NVIDIA显卡，支持CUDA加速
-
-### 依赖库安装
+### 依赖安装
 
 #### 1. PaddleOCR环境
+
 ```bash
 # 利用Anaconda，以下为经过验证的CPU版本安装命令
 conda create -n paddleocr python=3.9 -y
@@ -248,49 +183,23 @@ conda activate paddleocr
 python -m pip install --upgrade pip
 python -m pip install paddleocr
 pip install paddlepaddle==3.2.2 
+pip install PyMuPDF
 # GPU版本PaddlePaddle：pip install paddlepaddle-gpu -i https://mirror.baidu.com/pypi/simple
 # 注意：一般情况下，PaddlePaddle需要先安装，再安装PaddleOCR
 ```
 
 #### 2. YOLO环境
 ```bash
-# 以下为AI所给命令，暂未验证
+# 以下为AI所给命令，配置可参考B站视频
 # 基础图像处理库
 pip install opencv-python opencv-contrib-python
-pip install PyMuPDF
-
-# 深度学习框架 - PyTorch（根据你的CUDA版本选择）
-# CPU版本（推荐新手使用）
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-
-# 或GPU版本（CUDA 11.8）
-# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-# YOLO11（Ultralytics）
 pip install ultralytics
 ```
 
-#### 3. 完整依赖清单（暂未验证）
-你也可以创建 `requirements.txt` 文件：
-```txt
-opencv-python>=4.8.0
-opencv-contrib-python>=4.8.0
-PyMuPDF>=1.23.0
-torch>=2.0.0
-torchvision>=0.15.0
-ultralytics>=8.0.200
-paddlepaddle>=2.5.0
-paddleocr>=2.7.0
-numpy>=1.24.0
-```
 
-然后一次性安装：
-```bash
-pip install -r requirements.txt
-```
 
-### 验证安装
-运行以下代码验证所有依赖是否正确安装：
+
+### 安装验证
 ```python
 import cv2
 import fitz
@@ -309,12 +218,14 @@ print(f"CUDA可用: {torch.cuda.is_available()}")
 
 ## 快速使用指南
 
-### 完整处理流程
-1. **准备PDF文件**：将待处理的PDF文档放入指定目录
-2. **PDF转图片**：运行 `util/pdf_to_images.py` 转换为高清图片
-3. **YOLO检测**：运行 `pipelines/Step1_YOLO_detect/predict_images.py` 生成标注
-4. **分割归档**：运行 `pipelines/Step2_Crop_by_YOLO_Label/crop_by_yolo_with_metadata.py`
-5. **OCR生成结果**：运行 `process_cropped_data.py` 得到最终各村结果
+### 运行流程
+1. 准备 PDF 文件
+2. 运行 `python util/pdf_to_images.py`
+3. 运行 `python pipelines/Step1_YOLO_detect/detect_pdf_yolo_xhao.py`
+4. 运行 `python pipelines/Step2_Crop_by_YOLO_Label/crop_by_yolo_with_metadata.py`
+5. 运行 `python process_cropped_data.py`
+
+> 如果使用 GPU，请根据需要将脚本中的 `device` 参数修改为 `gpu`。
 
 ---
 
@@ -322,7 +233,7 @@ print(f"CUDA可用: {torch.cuda.is_available()}")
 
 | 组件 | 技术选型 | 用途 |
 |------|---------|------|
-| PDF处理 | PyMuPDF (fitz) | PDF转高清图片 |
-| 目标检测 | YOLO11 | 检测标题、正文、插图、图注 |
-| OCR文字识别 | PaddleOCR (PP-OCRv5) | 高精度中文识别 |
-| 图像处理 | OpenCV | 图片裁剪、尺寸处理 |
+| PDF 处理 | PyMuPDF (fitz) | PDF 转高清图片 |
+| 目标检测 | YOLO11 / Ultralytics | 检测标题、正文、插图、图注 |
+| OCR 识别 | PaddleOCR | 高精度中文 OCR |
+| 图像处理 | OpenCV | 图片裁剪、可视化 |
