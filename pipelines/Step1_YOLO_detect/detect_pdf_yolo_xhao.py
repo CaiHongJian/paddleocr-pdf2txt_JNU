@@ -27,9 +27,10 @@ COLORS = {
     'txt_4': (255, 128, 0),  # 橙色
 }
 
-def get_ordered_text_boxes(boxes, model_names, img_width):
+def get_ordered_text_boxes(boxes, model_names, img_width, img_height, title_boxes=None):
     """
-    从正文模型的检测结果中提取左右栏文本框，按阅读顺序排序。
+    从正文模型的检测结果中提取左右栏文本框，按阅读顺序排序，
+    并支持按 title 位置分段（title 上方一组，下方一组）。
     返回列表，每个元素为 (class_name, xywhn)，
     其中 class_name 为 'txt_1', 'txt_2', ... 按实际顺序。
     """
@@ -51,13 +52,41 @@ def get_ordered_text_boxes(boxes, model_names, img_width):
             'center_y': center_y,
             'is_left': is_left
         })
-    # 分离左右栏
-    left = [d for d in detections if d['is_left']]
-    right = [d for d in detections if not d['is_left']]
-    left.sort(key=lambda x: x['center_y'])
-    right.sort(key=lambda x: x['center_y'])
-    # 合并：先左后右
-    ordered = left + right
+
+    # 如果没有检测到正文框，直接返回空
+    if not detections:
+        return []
+
+    # 按 title 位置分段（如果有 title）
+    if title_boxes:
+        # 计算所有 title 框的下边界（y2）的最大值（像素坐标）
+        max_title_y2 = 0
+        for (xc, yc, ww, hh) in title_boxes:
+            # 归一化坐标转像素：y2 = (yc + hh/2) * img_height
+            y2 = (yc + hh / 2) * img_height
+            if y2 > max_title_y2:
+                max_title_y2 = y2
+        # 分组：center_y < max_title_y2 为上方组，否则为下方组
+        above = [d for d in detections if d['center_y'] < max_title_y2]
+        below = [d for d in detections if d['center_y'] >= max_title_y2]
+        groups = [above, below]
+    else:
+        # 没有 title 时，所有正文为一组
+        groups = [detections]
+
+    # 定义组内排序函数（先左后右，按 y 排序）
+    def sort_group(group):
+        left = [d for d in group if d['is_left']]
+        right = [d for d in group if not d['is_left']]
+        left.sort(key=lambda x: x['center_y'])
+        right.sort(key=lambda x: x['center_y'])
+        return left + right
+
+    # 对所有组依次排序并合并
+    ordered = []
+    for group in groups:
+        ordered.extend(sort_group(group))
+
     # 分配类别名 txt_1, txt_2, ...（最多到 txt_4，但可扩展）
     results = []
     for idx, det in enumerate(ordered, start=1):
@@ -85,11 +114,13 @@ def get_layout_boxes(boxes, model_names):
 
 def draw_boxes_on_image(image, boxes, class_names):
     """
-    在图像上绘制边界框和类别标签。
+    在图像上绘制边界框和类别标签（字体更大更清晰）。
     boxes: 列表，每个元素为 (class_name, (xc, yc, ww, hh))
     class_names: 类别名称字典（用于显示标签）
     """
     h, w = image.shape[:2]
+    font_scale = 1.5  # 调大字体
+    thickness = 3     # 加粗线条
     for class_name, (xc, yc, ww, hh) in boxes:
         # 归一化坐标转换为绝对坐标
         x_center = xc * w
@@ -101,20 +132,19 @@ def draw_boxes_on_image(image, boxes, class_names):
         x2 = int(x_center + width / 2)
         y2 = int(y_center + height / 2)
 
-        # 选择颜色（如果类别不在预定义中，使用白色）
+        # 选择颜色
         color = COLORS.get(class_name, (255, 255, 255))
 
         # 绘制矩形框
-        cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
+        cv2.rectangle(image, (x1, y1), (x2, y2), color, thickness)
 
         # 准备标签文本
         label = class_name
-        # 计算文本大小以绘制背景矩形
-        (text_w, text_h), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+        (text_w, text_h), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
         # 绘制文本背景
         cv2.rectangle(image, (x1, y1 - text_h - 5), (x1 + text_w, y1), color, -1)
-        # 绘制文本
-        cv2.putText(image, label, (x1, y1 - 3), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+        # 绘制文本（黑色）
+        cv2.putText(image, label, (x1, y1 - 3), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 0), thickness)
     return image
 
 def batch_detect_combined(
@@ -183,12 +213,29 @@ def batch_detect_combined(
         res_text = model_text(img_path, imgsz=imgsz, conf=conf_threshold, device=device, verbose=False)[0]
         res_layout = model_layout(img_path, imgsz=imgsz, conf=conf_threshold, device=device, verbose=False)[0]
 
-        # 获取排序后的正文框（已分配 txt_N 名称）
-        text_boxes = get_ordered_text_boxes(res_text.boxes, model_text.names, w)
-        # 获取布局框
+        # 获取布局框（包含 title, caption, img）
         layout_boxes = get_layout_boxes(res_layout.boxes, model_layout.names)
 
-        # 合并所有框
+        # 提取 title 框的归一化坐标（用于分段）
+        title_boxes = []
+        for class_name, xywhn in layout_boxes:
+            if class_name == 'title':
+                title_boxes.append(xywhn)
+
+        # 获取排序后的正文框（传入 title_boxes 进行分段）
+        text_boxes = get_ordered_text_boxes(
+            res_text.boxes,
+            model_text.names,
+            w,
+            h,
+            title_boxes=title_boxes if title_boxes else None
+        )
+
+        # 合并所有框（layout_boxes 包含 title/caption/img，注意不要重复添加 title，因为已有）
+        # 我们仍需保留 caption 和 img，但 title 已作为分段依据，但在最终标注中是否保留 title？
+        # 原逻辑中 layout_boxes 会全部加入，包括 title，但 title 已经在 layout_boxes 中，我们应保留所有布局框（包括 title），
+        # 因为 CLASSES 中包含 title，且输出需要 title 框。所以还是全部合并，但注意不要重复。
+        # 我们使用 layout_boxes（包含所有布局框）加上 text_boxes。
         all_boxes = text_boxes + layout_boxes
 
         # 写入 YOLO 格式标注文件（类别ID + 归一化坐标）
@@ -201,11 +248,9 @@ def batch_detect_combined(
         print(f"  已保存标注: {txt_path} (共 {len(all_boxes)} 个目标)")
 
         # ---------- 可视化部分 ----------
-        # 在图像副本上绘制所有框
         vis_img = img.copy()
-        vis_img = draw_boxes_on_image(vis_img, all_boxes, model_text.names)  # model_text.names 参数仅用于兼容，实际未使用
-        # 保存可视化图像
-        vis_path = vis_out / f"{img_name}.jpg"   # 统一保存为 .jpg 格式
+        vis_img = draw_boxes_on_image(vis_img, all_boxes, model_text.names)
+        vis_path = vis_out / f"{img_name}.jpg"
         cv2.imwrite(str(vis_path), vis_img)
         print(f"  已保存可视化: {vis_path}")
 
@@ -215,11 +260,10 @@ def batch_detect_combined(
     print(f"可视化目录: {vis_out}")
     print(f"类别文件: {classes_path}")
 
-
 if __name__ == '__main__':
     # ========== 配置参数 ==========
-    MODEL_TEXT = r"models\Model_xhao\detect_text.pt"      # 正文模型（输出 left/right）
-    MODEL_LAYOUT = r"models\Model_xhao\detect_layout.pt"  # 布局模型（输出 title/caption/img）
+    MODEL_TEXT = r"detect_text.pt"      # 正文模型（输出 left/right）
+    MODEL_LAYOUT = r"detect_layout.pt"  # 布局模型（输出 title/caption/img）
     INPUT_DIR = r"data\Temp_data\images_PDF"
     OUTPUT_DIR = r"data\Temp_data\images_PDF"
     # ==============================
