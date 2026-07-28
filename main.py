@@ -481,11 +481,24 @@ def stage4_ocr_recognition(cropped_dir, ocr_output_dir, use_gpu=True):
             target_dir = txt_dir
         tasks.append((img_path, target_dir))
 
-    # 并行执行 OCR
+    # 并行执行 OCR（带重试机制）
     failed_count = 0
+    failed_files = []
+    MAX_RETRY = 1  # 失败后重试次数
+
+    def _ocr_task(img_path, target_dir, dev):
+        """带重试的 OCR 任务"""
+        for attempt in range(MAX_RETRY + 1):
+            try:
+                return ocr_image_to_json(img_path, target_dir, device=dev)
+            except Exception as e:
+                if attempt < MAX_RETRY:
+                    continue
+                raise e
+
     with ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
         future_map = {
-            executor.submit(ocr_image_to_json, img_path, target_dir, device=device): img_path
+            executor.submit(_ocr_task, img_path, target_dir, device): img_path
             for img_path, target_dir in tasks
         }
 
@@ -497,7 +510,9 @@ def stage4_ocr_recognition(cropped_dir, ocr_output_dir, use_gpu=True):
                     future.result()
                 except Exception as e:
                     failed_count += 1
-                    print(f"\n   ⚠ OCR 失败: {os.path.basename(img_path)} → {e}")
+                    failed_files.append(os.path.basename(img_path))
+                    if failed_count <= 10:  # 只打印前10个失败
+                        print(f"\n   ⚠ OCR 失败: {os.path.basename(img_path)} → {type(e).__name__}")
                 pbar.update(1)
 
     # 统计OCR结果
@@ -507,6 +522,12 @@ def stage4_ocr_recognition(cropped_dir, ocr_output_dir, use_gpu=True):
 
     status = "✅" if failed_count == 0 else f"⚠️ (失败 {failed_count})"
     print(f"   {status} Stage 4 完成：{total_images} 张图片 → {json_count} 个JSON → {ocr_output_dir}")
+    if failed_files:
+        print(f"   失败文件列表（前20个）:")
+        for fname in failed_files[:20]:
+            print(f"     - {fname}")
+        if len(failed_files) > 20:
+            print(f"     ... 还有 {len(failed_files) - 20} 个")
     print()
     return total_images
 
