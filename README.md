@@ -177,35 +177,35 @@ data/Temp_data/images_cropped_villages/
 #### 1. PaddleOCR环境
 
 ```bash
-# 利用Anaconda。注意：一般情况下，PaddlePaddle需要先安装，再安装PaddleOCR
+# 利用Anaconda。
 # 为避免兼容问题，paddleocr版本建议下载3.4.0版本，paddlepaddle根据实际情况下载。
-
-# 以下为经过验证的CPU版本安装命令
-conda create -n paddleocr python=3.9 -y
-conda activate paddleocr
+# CPU版本paddleocr安装配置命令
+conda create -n ocr python=3.9 -y
+conda activate ocr
 python -m pip install --upgrade pip
-python -m pip install paddleocr	# 实际使用paddleocr版本为3.4.0，可使用python -m paddleocr --version查看版本号
-pip install paddlepaddle==3.2.2 # paddlepaddle cpu 3.3.0版本存在oneDNN兼容bug，无法使用
-pip install PyMuPDF
-pip install tqdm
-pip install fitz
+pip install paddlepaddle==3.2.2 
+python -m pip install paddleocr==3.4.0	
 
-
-# GPU版本
-# PaddlePaddle安装命令可查看：https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/develop/install/pip/windows-pip.html
+# 对于GPU版本，paddleocr同样安装3.4.0版本。
+# PaddlePaddle gpu版安装命令可查看：https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/develop/install/pip/windows-pip.html
 # 1080Ti的显卡，cuda用11.8，其它的都用最新版的安装即可
-
 ```
 
 #### 2. YOLO环境
 ```bash
-# 以下为AI所给命令，配置可参考B站视频
-# 基础图像处理库
-pip install opencv-python opencv-contrib-python
-pip install ultralytics
+conda activate ocr
+# CPU版安装配置命令
+pip3 install torch torchvision
+pip install -U ultralytics
+# GPU版pytorch安装配置命令见https://pytorch.org/
 ```
 
-
+#### 3. 其他依赖
+```bash
+conda activate ocr
+pip install PyMuPDF
+pip install tqdm
+```
 
 
 ### 安装验证
@@ -234,7 +234,7 @@ print(f"CUDA可用: {torch.cuda.is_available()}")
 4. 运行 `python pipelines/Step2_Crop_by_YOLO_Label/crop_by_yolo_with_metadata.py`
 5. 运行 `python process_cropped_data.py`
 
-> 如果使用 GPU，请根据需要将脚本中的 `device` 参数修改为 `gpu`。
+> 如果使用 GPU，请根据需要将脚本中的 `device` 参数修改为 `gpu`，main.py中将`OCR_USE_GPU` 改 `True `
 
 ---
 
