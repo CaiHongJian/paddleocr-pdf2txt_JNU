@@ -3,7 +3,7 @@
 ================================
 
 基于 PaddleOCR + YOLO 的双栏 PDF 正文提取系统一键流水线。
-用户仅需配置 INPUT_PDF_PATH 和 FINAL_OUTPUT_DIR 即可完成全部处理。
+用户仅需配置输入pdf路径 INPUT_PDF_PATH 即可完成全部处理。
 
 流水线步骤：
   1. PDF → 高清 PNG 图片（300 DPI）
@@ -12,7 +12,7 @@
   4. PaddleOCR 批量文字识别
   5. 带缩进文本合并 + 按村落输出
 
-Author: chj
+Author: CaiHongJian
 Date:   2026-07-28
 """
 
@@ -28,7 +28,7 @@ from tqdm import tqdm
 import fitz
 
 # ========== 用户仅需修改以下两项 ==========
-INPUT_PDF_PATH = r"path/to/input.pdf"          # 输入PDF路径
+INPUT_PDF_PATH = r"D:/Download/282.江门市开平市卷（一）.pdf"          # 输入PDF路径
 FINAL_OUTPUT_DIR = r"data/Final_output"        # 最终输出目录（默认，可以不改）
 # ==========================================
 
@@ -37,7 +37,7 @@ PDF_DPI = 300                  # PDF转图分辨率；300DPI兼顾清晰度与�
 YOLO_DEVICE = "auto"           # auto/gpu/cpu；auto自动检测CUDA可用性
 YOLO_CONF_THRESH = 0.25        # YOLO置信度阈值；低于此值的目标被过滤，过高会漏检
 YOLO_IOU_THRESH = 0.45         # NMS IOU阈值；控制重叠框合并强度
-OCR_USE_GPU = True             # PaddleOCR是否使用GPU；False则强制CPU
+OCR_USE_GPU = False             # PaddleOCR是否使用GPU；False则强制CPU
 OCR_MAX_BATCH_SIZE = 8         # OCR批处理大小；显存不足时可降至4或2
 NUM_WORKERS = 4                # 并行worker数；CPU核心数的一半通常较优
 
