@@ -19,7 +19,7 @@ def load_classes(classes_file):
     """
     with open(classes_file, 'r', encoding='utf-8') as f:
         classes = [line.strip() for line in f if line.strip()]
-    print(f"加载类别: {classes}")
+    # print(f"加载类别: {classes}")
     return classes
 
 
@@ -42,7 +42,7 @@ def parse_yolo_label(txt_path, img_width, img_height):
     boxes = []
     
     if not os.path.exists(txt_path):
-        print(f"警告: 标注文件不存在: {txt_path}")
+        # print(f"警告: 标注文件不存在: {txt_path}")
         return boxes
     
     with open(txt_path, 'r', encoding='utf-8') as f:
@@ -159,9 +159,9 @@ def collect_all_titles(image_files, labels_dir, classes, title_class_id):
         page_titles.sort(key=lambda t: t['y_center'])
         all_titles.extend(page_titles)
     
-    print(f"\n【第一遍扫描完成】共发现 {len(all_titles)} 个 title")
-    for t in all_titles:
-        print(f"  - {t['title_name']} (第{t['page_index']}页, y_center={t['y_center']:.0f})")
+    # print(f"\n【第一遍扫描完成】共发现 {len(all_titles)} 个 title")
+    # for t in all_titles:
+    #     print(f"  - {t['title_name']} (第{t['page_index']}页, y_center={t['y_center']:.0f})")
     
     return all_titles
 
@@ -204,22 +204,22 @@ def crop_and_save(image, box, class_name, output_dir, img_name, suffix=""):
     x1, y1, x2, y2 = box['x1'], box['y1'], box['x2'], box['y2']
     
     if x2 <= x1 or y2 <= y1:
-        print(f"  跳过无效区域: {img_name} -> {class_name} (w:{x2-x1}, h:{y2-y1})")
+        # print(f"  跳过无效区域: {img_name} -> {class_name} (w:{x2-x1}, h:{y2-y1})")
         return None
     
     cropped = image[y1:y2, x1:x2]
     
     if suffix:
-        output_name = f"{img_name}_{class_name}_{suffix}.png"
+        output_name = f"{img_name}_{class_name}_{suffix}.jpg"
     else:
-        output_name = f"{img_name}_{class_name}.png"
+        output_name = f"{img_name}_{class_name}.jpg"
     output_path = os.path.join(output_dir, output_name)
     
     # 处理文件名冲突
     counter = 1
     base_output_path = output_path
     while os.path.exists(output_path):
-        output_name = f"{img_name}_{class_name}_{counter}.png"
+        output_name = f"{img_name}_{class_name}_{counter}.jpg"
         output_path = os.path.join(output_dir, output_name)
         counter += 1
         if counter > 100:
@@ -227,10 +227,10 @@ def crop_and_save(image, box, class_name, output_dir, img_name, suffix=""):
     
     success = cv2.imwrite(output_path, cropped)
     if success:
-        print(f"  ✓ 已保存: {os.path.basename(output_path)} ({x2-x1}x{y2-y1})")
+        # print(f"  ✓ 已保存: {os.path.basename(output_path)} ({x2-x1}x{y2-y1})")
         return output_name
     else:
-        print(f"  ✗ 保存失败: {os.path.basename(output_path)}")
+        # print(f"  ✗ 保存失败: {os.path.basename(output_path)}")
         return None
 
 
@@ -281,15 +281,15 @@ def process_single_image(img_path, txt_path, classes, title_class_id,
     img_name = Path(img_path).stem
     image = cv2.imread(img_path)
     if image is None:
-        print(f"✗ 无法读取图片: {img_path}")
+        # print(f"✗ 无法读取图片: {img_path}")
         return 0
     
     img_height, img_width = image.shape[:2]
-    print(f"\n处理: {img_name} ({img_width}x{img_height})")
+    # print(f"\n处理: {img_name} ({img_width}x{img_height})")
     
     boxes = parse_yolo_label(txt_path, img_width, img_height)
     if not boxes:
-        print(f"  未找到标注信息")
+        # print(f"  未找到标注信息")
         return 0
     
     # 填充类别名称
@@ -308,7 +308,7 @@ def process_single_image(img_path, txt_path, classes, title_class_id,
         
         assigned_title = find_title_for_box(box, page_idx, img_height, all_titles)
         if assigned_title is None:
-            print(f"  警告: {img_name} 的 {box['class_name']} 无法找到归属 title，跳过")
+            # print(f"  警告: {img_name} 的 {box['class_name']} 无法找到归属 title，跳过")
             continue
         
         # 准备该 title 的容器
@@ -440,12 +440,13 @@ def process_folder(images_dir, labels_dir, output_dir, classes_file):
     img_class_id = get_class_id_by_keyword(classes, 'img')
     caption_class_id = get_class_id_by_keyword(classes, 'caption')
     
-    print(f"title 类别 ID: {title_class_id} ({classes[title_class_id] if 0 <= title_class_id < len(classes) else '未知'})")
-    print(f"img 类别 ID: {img_class_id} ({classes[img_class_id] if 0 <= img_class_id < len(classes) else '未找到'})")
-    print(f"caption 类别 ID: {caption_class_id} ({classes[caption_class_id] if 0 <= caption_class_id < len(classes) else '未找到'})")
+    # print(f"title 类别 ID: {title_class_id} ({classes[title_class_id] if 0 <= title_class_id < len(classes) else '未知'})")
+    # print(f"img 类别 ID: {img_class_id} ({classes[img_class_id] if 0 <= img_class_id < len(classes) else '未找到'})")
+    # print(f"caption 类别 ID: {caption_class_id} ({classes[caption_class_id] if 0 <= caption_class_id < len(classes) else '未找到'})")
     
     if img_class_id == -1 or caption_class_id == -1:
-        print("警告: 未找到 img 或 caption 类别，元数据记录将不完整")
+        # print("警告: 未找到 img 或 caption 类别，元数据记录将不完整")
+        pass
     
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
@@ -460,24 +461,24 @@ def process_folder(images_dir, labels_dir, output_dir, classes_file):
     
     total_images = len(image_files)
     if total_images == 0:
-        print("错误: 未找到任何图片文件")
+        # print("错误: 未找到任何图片文件")
         return 0
     
-    print(f"\n{'='*60}")
-    print(f"发现 {total_images} 张图片")
-    print(f"{'='*60}")
+    # print(f"\n{'='*60}")
+    # print(f"发现 {total_images} 张图片")
+    # print(f"{'='*60}")
     
     # ===== 阶段一：收集所有 title =====
-    print("\n【阶段一】扫描所有页面，收集 title 坐标信息...")
+    # print("\n【阶段一】扫描所有页面，收集 title 坐标信息...")
     all_titles = collect_all_titles(image_files, labels_dir, classes, title_class_id)
     if not all_titles:
-        print("错误: 未找到任何 title，无法进行分类归档")
+        # print("错误: 未找到任何 title，无法进行分类归档")
         return 0
     
     # ===== 阶段二：按 title 归属分割并收集元数据 =====
-    print(f"\n{'='*60}")
-    print("【阶段二】按 title 归属关系分割图片，同时收集 img/caption 元数据...")
-    print(f"{'='*60}")
+    # print(f"\n{'='*60}")
+    # print("【阶段二】按 title 归属关系分割图片，同时收集 img/caption 元数据...")
+    # print(f"{'='*60}")
     
     # 全局元数据容器: { title_name: [ records ] }
     title_metadata = {}
@@ -501,12 +502,12 @@ def process_folder(images_dir, labels_dir, output_dir, classes_file):
         )
         total_crops += crops
         
-        if idx % 10 == 0 or idx == total_images:
-            print(f"\n进度: [{idx}/{total_images}] 已裁剪 {total_crops} 个区域")
+        # if idx % 10 == 0 or idx == total_images:
+        #     print(f"\n进度: [{idx}/{total_images}] 已裁剪 {total_crops} 个区域")
     
     # ===== 阶段三：写入每个 title 的元数据 JSON 文件 =====
-    print(f"\n{'='*60}")
-    print("【阶段三】写入各 title 的 img-caption 元数据 JSON...")
+    # print(f"\n{'='*60}")
+    # print("【阶段三】写入各 title 的 img-caption 元数据 JSON...")
     for title_name, records in title_metadata.items():
         title_folder = os.path.join(output_dir, title_name)
         if not os.path.exists(title_folder):
@@ -517,26 +518,26 @@ def process_folder(images_dir, labels_dir, output_dir, classes_file):
                 "title": title_name,
                 "pairs": records
             }, f, ensure_ascii=False, indent=2)
-        print(f"  ✓ 已生成: {metadata_path} (共 {len(records)} 个 img-caption 对)")
+        # print(f"  ✓ 已生成: {metadata_path} (共 {len(records)} 个 img-caption 对)")
     
     # ===== 统计输出 =====
-    print(f"\n{'='*60}")
-    print(f"处理完成!")
-    print(f"处理图片: {total_images} 张")
-    print(f"发现 title: {len(all_titles)} 个")
-    print(f"裁剪区域: {total_crops} 个")
-    print(f"输出目录: {output_dir}")
+    # print(f"\n{'='*60}")
+    # print(f"处理完成!")
+    # print(f"处理图片: {total_images} 张")
+    # print(f"发现 title: {len(all_titles)} 个")
+    # print(f"裁剪区域: {total_crops} 个")
+    # print(f"输出目录: {output_dir}")
     
-    print(f"\n【归档结果】")
+    # print(f"\n【归档结果】")
     title_folders = sorted([d for d in os.listdir(output_dir)
                            if os.path.isdir(os.path.join(output_dir, d)) and 'title' in d])
     for folder in title_folders:
         folder_path = os.path.join(output_dir, folder)
         files = os.listdir(folder_path)
-        json_exists = "img_caption_metadata.json" in files
-        print(f"  📁 {folder}/ : {len(files)} 个文件 {'(含元数据)' if json_exists else ''}")
+        # json_exists = "img_caption_metadata.json" in files
+        # print(f"  📁 {folder}/ : {len(files)} 个文件 {'(含元数据)' if json_exists else ''}")
     
-    print(f"{'='*60}")
+    # print(f"{'='*60}")
     return total_crops
 
 
