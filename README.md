@@ -177,7 +177,9 @@ data/Temp_data/images_cropped_villages/
 #### 1. PaddleOCR环境
 
 ```bash
-# 利用Anaconda
+# 利用Anaconda。注意：一般情况下，PaddlePaddle需要先安装，再安装PaddleOCR
+# 为避免兼容问题，paddleocr版本建议下载3.4.0版本，paddlepaddle根据实际情况下载。
+
 # 以下为经过验证的CPU版本安装命令
 conda create -n paddleocr python=3.9 -y
 conda activate paddleocr
@@ -185,9 +187,14 @@ python -m pip install --upgrade pip
 python -m pip install paddleocr	# 实际使用paddleocr版本为3.4.0，可使用python -m paddleocr --version查看版本号
 pip install paddlepaddle==3.2.2 # paddlepaddle cpu 3.3.0版本存在oneDNN兼容bug，无法使用
 pip install PyMuPDF
+pip install tqdm
+pip install fitz
 
-# GPU版本PaddlePaddle：pip install paddlepaddle-gpu -i https://mirror.baidu.com/pypi/simple
-# 注意：一般情况下，PaddlePaddle需要先安装，再安装PaddleOCR
+
+# GPU版本
+# PaddlePaddle安装命令可查看：https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/develop/install/pip/windows-pip.html
+# 1080Ti的显卡，cuda用11.8，其它的都用最新版的安装即可
+
 ```
 
 #### 2. YOLO环境
