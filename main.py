@@ -24,11 +24,51 @@ import glob
 import shutil
 import threading
 import queue
+import traceback
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import numpy as np
+import cv2
 from tqdm import tqdm
 import fitz
+
+from ultralytics import YOLO
+from pipelines.Step1_YOLO_detect.detect_pdf_yolo_xhao import (
+    get_ordered_text_boxes, get_layout_boxes, draw_boxes_on_image
+)
+from pipelines.Step2_Crop_by_YOLO_Label.crop_by_yolo_with_metadata import process_folder
+from util.ocr_utils import ocr_image_to_json, ocr_image_to_text
+from util.txt_extractor import extract_text_from_ocr_json
+from util.txt_merger import parse_page_and_txt_num, merge_txt_segments
+
+# --- 可选依赖（仅用于环境信息展示，缺失不影响核心功能） ---
+try:
+    import torch
+    _TORCH_AVAILABLE = True
+except ImportError:
+    _TORCH_AVAILABLE = False
+    torch = None
+
+try:
+    import paddle
+    _PADDLE_AVAILABLE = True
+except ImportError:
+    _PADDLE_AVAILABLE = False
+    paddle = None
+
+try:
+    from paddleocr import __version__ as _POCR_VERSION
+    _POCR_AVAILABLE = True
+except ImportError:
+    try:
+        import paddleocr
+        _POCR_VERSION = getattr(paddleocr, "__version__", "未知")
+        _POCR_AVAILABLE = True
+    except ImportError:
+        _POCR_AVAILABLE = False
+        _POCR_VERSION = None
+        paddleocr = None
 
 # ========== 用户仅需修改以下两项 ==========
 INPUT_PDF_PATH = r"D:/Download/282.江门市开平市卷（一）.pdf"          # 输入PDF路径
@@ -81,41 +121,27 @@ def print_environment_info():
     info = {}
     info["Python"] = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
-    try:
-        import torch
+    if _TORCH_AVAILABLE:
         info["PyTorch"] = torch.__version__
         cuda_available = torch.cuda.is_available()
         info["CUDA 可用"] = str(cuda_available)
-        if cuda_available:
-            info["当前设备"] = "GPU (CUDA)"
-        else:
-            info["当前设备"] = "CPU"
-    except ImportError:
+        info["当前设备"] = "GPU (CUDA)" if cuda_available else "CPU"
+    else:
         info["PyTorch"] = "未安装"
         info["CUDA 可用"] = "未知"
         info["当前设备"] = "CPU (fallback)"
 
-    try:
-        import paddle
+    if _PADDLE_AVAILABLE:
         info["PaddlePaddle"] = paddle.__version__
-    except ImportError:
+    else:
         info["PaddlePaddle"] = "未安装"
 
-    try:
-        from paddleocr import __version__ as paddleocr_version
-        info["PaddleOCR"] = paddleocr_version
-    except ImportError:
-        try:
-            import paddleocr
-            info["PaddleOCR"] = getattr(paddleocr, "__version__", "未知")
-        except ImportError:
-            info["PaddleOCR"] = "未安装"
+    if _POCR_AVAILABLE:
+        info["PaddleOCR"] = _POCR_VERSION
+    else:
+        info["PaddleOCR"] = "未安装"
 
-    try:
-        import cv2
-        info["OpenCV"] = cv2.__version__
-    except ImportError:
-        info["OpenCV"] = "未安装"
+    info["OpenCV"] = cv2.__version__
 
     try:
         info["PyMuPDF"] = fitz.__version__ if hasattr(fitz, '__version__') else str(fitz.version)
@@ -218,14 +244,6 @@ def stage1_stage2_pipeline(pdf_path, images_dir, output_dir, dpi, conf_thresh, d
         raise FileNotFoundError(f"PDF 文件不存在: {pdf_path}")
 
     # ---------- 初始化 YOLO 模型 ----------
-    from ultralytics import YOLO
-    import cv2
-    import numpy as np
-
-    from pipelines.Step1_YOLO_detect.detect_pdf_yolo_xhao import (
-        get_ordered_text_boxes, get_layout_boxes, draw_boxes_on_image
-    )
-
     print(f"   加载模型: {MODEL_TEXT_PATH}, {MODEL_LAYOUT_PATH}")
     model_text = YOLO(MODEL_TEXT_PATH)
     model_layout = YOLO(MODEL_LAYOUT_PATH)
@@ -381,8 +399,6 @@ def stage3_crop_by_yolo(images_dir, labels_dir, output_dir, classes_file):
     """
     print("✂️  Stage 3: 智能裁剪归档")
 
-    from pipelines.Step2_Crop_by_YOLO_Label.crop_by_yolo_with_metadata import process_folder
-
     images_dir = str(Path(images_dir))
     labels_dir = str(Path(labels_dir))
     output_dir = str(Path(output_dir))
@@ -440,8 +456,6 @@ def stage4_ocr_recognition(cropped_dir, ocr_output_dir, use_gpu=True):
         util.ocr_utils.ocr_image_to_json
     """
     print(f"📖 Stage 4: PaddleOCR 并行识别 (max_workers={NUM_WORKERS})")
-
-    from util.ocr_utils import ocr_image_to_json
 
     cropped_dir = str(Path(cropped_dir))
     ocr_output_dir = str(Path(ocr_output_dir))
@@ -546,10 +560,6 @@ def stage5_text_merge(ocr_json_dir, cropped_dir, final_output_dir, use_gpu=True)
     """
     print("📝 Stage 5: 文本合并与最终输出")
 
-    from util.ocr_utils import ocr_image_to_text
-    from util.txt_extractor import extract_text_from_ocr_json
-    from util.txt_merger import parse_page_and_txt_num, merge_txt_segments
-
     cropped_dir = str(Path(cropped_dir))
     final_output_dir = str(Path(final_output_dir))
     villages_output_dir = os.path.join(final_output_dir, "各村OCR结果")
@@ -587,8 +597,6 @@ def stage5_text_merge(ocr_json_dir, cropped_dir, final_output_dir, use_gpu=True)
         raise RuntimeError(f"在 {cropped_dir} 下未找到任何 title 文件夹")
 
     print(f"   发现 {len(title_folders)} 个村落标题")
-
-    import cv2
 
     global_idx = 1
     all_village_texts = []
@@ -701,13 +709,14 @@ def stage5_text_merge(ocr_json_dir, cropped_dir, final_output_dir, use_gpu=True)
 
     # 4. 合并所有村落文本为总文件
     if all_village_texts:
-        combined_path = os.path.join(final_output_dir, "广州市从化区卷一_1-260.txt")
+        pdf_stem = os.path.splitext(os.path.basename(INPUT_PDF_PATH))[0]
+        combined_path = os.path.join(final_output_dir, f"{pdf_stem}.txt")
         with open(combined_path, 'w', encoding='utf-8') as f:
             f.write('\n\n'.join(all_village_texts))
 
     print(f"   ✅ Stage 5 完成：{len(title_folders)} 个村落 → {villages_output_dir}")
     if all_village_texts:
-        print(f"   ✅ 合并总文件 → {os.path.join(final_output_dir, '广州市从化区卷一_1-260.txt')}")
+        print(f"   ✅ 合并总文件 → {combined_path}")
     print()
     return len(title_folders)
 
@@ -748,22 +757,14 @@ def main():
 
     # 计算实际设备
     actual_ocr_use_gpu = OCR_USE_GPU
-    if actual_ocr_use_gpu:
-        try:
-            import torch
-            if not torch.cuda.is_available():
-                print("⚠️  GPU不可用，OCR自动切换为CPU模式")
-                actual_ocr_use_gpu = False
-        except ImportError:
+    if actual_ocr_use_gpu and _TORCH_AVAILABLE:
+        if not torch.cuda.is_available():
+            print("⚠️  GPU不可用，OCR自动切换为CPU模式")
             actual_ocr_use_gpu = False
 
     actual_device = YOLO_DEVICE
     if actual_device == "auto":
-        try:
-            import torch
-            actual_device = "cuda" if torch.cuda.is_available() else "cpu"
-        except ImportError:
-            actual_device = "cpu"
+        actual_device = "cuda" if (_TORCH_AVAILABLE and torch.cuda.is_available()) else "cpu"
 
     # 总进度条
     with tqdm(total=5, desc="🚀 总体进度", position=0,
@@ -782,7 +783,6 @@ def main():
             )
         except Exception as e:
             print(f"❌ Stage 1+2 失败: {e}")
-            import traceback
             traceback.print_exc()
             sys.exit(1)
         pbar_total.update(1)
@@ -803,7 +803,6 @@ def main():
             )
         except Exception as e:
             print(f"❌ Stage 3 失败: {e}")
-            import traceback
             traceback.print_exc()
             sys.exit(1)
         pbar_total.update(1)
@@ -824,7 +823,6 @@ def main():
             )
         except Exception as e:
             print(f"❌ Stage 4 失败: {e}")
-            import traceback
             traceback.print_exc()
             sys.exit(1)
         pbar_total.update(1)
@@ -845,7 +843,6 @@ def main():
             )
         except Exception as e:
             print(f"❌ Stage 5 失败: {e}")
-            import traceback
             traceback.print_exc()
             sys.exit(1)
         pbar_total.update(1)
@@ -862,7 +859,8 @@ def main():
                              if os.path.isdir(os.path.join(villages_dir, d))])
         print(f"  村落数量: {village_count}")
 
-    combined_file = os.path.join(FINAL_OUTPUT_DIR, "广州市从化区卷一_1-260.txt")
+    pdf_stem = os.path.splitext(os.path.basename(INPUT_PDF_PATH))[0]
+    combined_file = os.path.join(FINAL_OUTPUT_DIR, f"{pdf_stem}.txt")
     if os.path.exists(combined_file):
         file_size = os.path.getsize(combined_file)
         print(f"  总文本大小: {file_size:,} bytes")
